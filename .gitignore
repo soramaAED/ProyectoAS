@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+data/
+dataset_metadata.csv
+particiones_datos.RData

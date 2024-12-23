@@ -1,0 +1,187 @@
+---
+title: "Proyecto"
+output: html_document
+date: "2024-12-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#################
+### LIBRERIAS ###
+#################
+
+library(jpeg)
+library(class)
+library(caret)
+library(imager)
+library(magick)
+
+
+# Establecer la semilla para reproducibilidad
+set.seed(42)
+```
+
+# Carga de datos
+```{r}
+if (file.exists("./particiones_datos.RData")) {
+  
+  # Cargar el archivo .RData
+  load("./particiones_datos.RData")
+  cat("Partición de datos cargada correctamente.\n")
+  
+} else {
+  
+  # Ruta base a las imagenes
+  path <- "./data"
+  
+  ###
+  ### Conversion .webp a .jpg
+  ###
+  
+  # Obtener todas las carpetas (etiquetas)
+  carpetas_etiquetas <- list.dirs(path, recursive = FALSE, full.names = TRUE)
+  
+  # Verificar si hay al menos un archivo .webp en las carpetas
+  hay_webp <- any(sapply(carpetas_etiquetas, function(carpeta) {
+    length(list.files(carpeta, pattern = "\\.webp$", full.names = TRUE)) > 0
+  }))
+  
+  if (hay_webp) {
+    # Obtener todas las carpetas (etiquetas)
+    carpetas_etiquetas <- list.dirs(path, recursive = FALSE, full.names = TRUE)
+    
+    # Función para reemplazar imágenes .webp con su conversión a .jpg
+    convertir_webp_a_jpg <- function(carpeta) {
+      # Listar las imagenes .webp en la carpeta
+      imagenes_webp <- list.files(carpeta, pattern = "\\.webp$", full.names = TRUE)
+      
+      for (ruta_webp in imagenes_webp) {
+        # Cargar la imagen
+        img <- image_read(ruta_webp)
+        
+        # Crear el nuevo nombre de archivo con extensión .jpg
+        ruta_jpg <- sub("\\.webp$", ".jpg", ruta_webp)  # Cambiar la extensión
+        
+        # Guardar la imagen convertida como .jpg
+        image_write(img, path = ruta_jpg, format = "jpg")
+        
+        # Eliminar el archivo original .webp
+        file.remove(ruta_webp)
+      }
+    }
+    
+    # Procesar todas las carpetas de etiquetas
+    for (carpeta in carpetas_etiquetas) {
+      convertir_webp_a_jpg(carpeta)
+    }
+    
+    cat("Todas las imágenes .webp han sido convertidas a .jpg.\n")
+  }
+  
+  ###
+  ### Generacion metadatos
+  ###
+  
+  source("generacionMetadatos.R")
+  
+  ### 
+  ### Importacion datos
+  ###
+  
+  # Ruta a las imagenes y carga de metadatos
+  files <- dir(path, full.names = TRUE, recursive = TRUE)
+  csvfile <- "./dataset_metadata.csv"
+  meta <- read.csv(csvfile, as.is = TRUE)
+  
+  
+  ###
+  ### Particionado de los datos
+  ###
+  
+  # Crear índices de muestreo estratificado
+  train_indices <- createDataPartition(meta$etiqueta, p = 0.7, list = FALSE)
+  
+  # Dividir en entrenamiento y prueba
+  files_train <- files[train_indices]
+  files_test <- files[-train_indices]
+  
+  meta_train <- meta[train_indices, ]
+  meta_test <- meta[-train_indices, ]
+  
+  # Verificar proporciones de "soleado", "nublado" y "noche" en los conjuntos
+  prop_train <- table(meta_train$etiqueta) / nrow(meta_train)
+  prop_test <- table(meta_test$etiqueta) / nrow(meta_test)
+  
+  cat("\nProporciones en entrenamiento:")
+  print(prop_train)
+  
+  cat("\nProporciones en prueba:")
+  print(prop_test)
+  
+  # Crear etiquetas (tags) para el conjunto de entrenamiento
+  ### 
+  ### NOCHE   -> 0
+  ### SOLEADO -> 1
+  ### NUBLADO -> 2
+  ### 
+  pchSymb_train <- rep(0, length(files_train))
+  pchSymb_train[meta_train$etiqueta == "soleado"] <- 1
+  pchSymb_train[meta_train$etiqueta == "nublado"] <- 2
+  
+  # Crear etiquetas (tags) para el conjunto de prueba
+  ### 
+  ### NOCHE   -> 0
+  ### SOLEADO -> 1
+  ### NUBLADO -> 2
+  ### 
+  pchSymb_test <- rep(0, length(files_test))
+  pchSymb_test[meta_test$etiqueta == "soleado"] <- 1
+  pchSymb_test[meta_test$etiqueta == "nublado"] <- 2
+   
+  save(files_train, files_test, pchSymb_train, pchSymb_test, file = "particiones_datos.RData")
+  cat("\nLas particiones han sido guardadas correctamente en el archivo 'particiones_datos.RData'.\n")
+}
+```
+
+# Preparación de los datos
+```{r}
+# Dimensiones deseadas para el reescalado
+new_width <- 640
+new_height <- 640
+
+# Función para reescalar una sola imagen
+reescalar_imagen <- function(ruta_imagen, new_width, new_height) {
+  if (file.exists(ruta_imagen)) {  # Verifica si la imagen existe
+    img <- load.image(ruta_imagen)
+    img_resized <- resize(img, new_width, new_height)
+    return(img_resized)
+  } else {
+    warning(paste("El archivo", ruta_imagen, "no existe."))
+    return(NULL)
+  }
+}
+
+# Función para procesar un conjunto de imagenes (lista de rutas)
+reescalar_particion <- function(particion, new_width, new_height) {
+  # Aplicar reescalado a todas las imagenes
+  imagenes_reescaladas <- lapply(particion, reescalar_imagen, new_width = new_width, new_height = new_height)
+  
+  # Filtrar imagenes que no se pudieron cargar
+  imagenes_reescaladas <- imagenes_reescaladas[!sapply(imagenes_reescaladas, is.null)]
+  
+  return(imagenes_reescaladas)
+}
+
+# Reescalar imagenes de train y test
+imagenes_train <- reescalar_particion(files_train, new_width, new_height)
+imagenes_test <- reescalar_particion(files_test, new_width, new_height)
+
+# Verifica los resultados
+length(imagenes_train)  # Número de imágenes reescaladas en train
+length(imagenes_test)   # Número de imágenes reescaladas en test
+
+# Mostrar la primera imagen reescalada
+plot(imagenes_train[[1]])
+
+```
