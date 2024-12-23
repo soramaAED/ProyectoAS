@@ -245,7 +245,74 @@ for (i in 1:nrow(RGB_test)) {
 }
 ```
 
-```{r}
-HSV_test
-```
+IDEA: Las imágenes de día o soleadas pueden tener más variación de alta frecuencia debido a sombras y detalles, mientras que las de noche o nublado pueden tener más componentes de baja frecuencia.
 
+```{r}
+#########################################
+# Características basadas en frecuencia #
+#########################################
+
+# Función para calcular características de frecuencia de imágenes
+extraer_caracteristicas_fft <- function(imagenes_train) {
+  # Crea una matriz para almacenar las características
+  caracteristicas_fft <- matrix(0, nrow = length(imagenes_train), ncol = 2)
+  colnames(caracteristicas_fft) <- c("Baja_Frecuencia", "Alta_Frecuencia")
+  
+  # Iteramos sobre cada imagen en el vector
+  for (j in 1:length(imagenes_train)) {
+    # Carga la imagen
+    img <- imagenes_train[[j]]
+    
+    # Conversión a escala de grises si tiene 3 canales (RGB)
+    # La FFT se aplica a una sola banda de datos.
+    if (dim(img)[3] == 3) {
+      img <- grayscale(as.cimg(img))
+    }
+    
+    # Transformada de Fourier
+    fft_img <- fft(as.numeric(img))
+    
+    # Espectro de frecuencias (magnitud del FFT)
+    mag_fft <- Mod(fft_img)
+    
+    # Reestructurar como una matriz 2D para análisis
+    mag_fft_matrix <- matrix(mag_fft, nrow = dim(img)[1], ncol = dim(img)[2])
+    
+    # Partición en frecuencias bajas y altas
+    # Las frecuencias bajas están concentradas en el centro del espectro
+    centro <- floor(dim(mag_fft_matrix) / 2)
+    # Se define un radio basado en el tamaño de la imagen para enmascarar las frecuencias bajas.
+    radio <- min(centro) / 4 
+    
+    # Crea una máscara para frecuencias bajas
+    mask <- matrix(0, nrow = dim(mag_fft_matrix)[1], ncol = dim(mag_fft_matrix)[2])
+    for (x in 1:dim(mask)[1]) {
+      for (y in 1:dim(mask)[2]) {
+        dist <- sqrt((x - centro[1])^2 + (y - centro[2])^2)
+        if (dist <= radio) {
+          mask[x, y] <- 1
+        }
+      }
+    }
+    
+    # Calculo de energía de frecuencias bajas y altas
+    baja_freq <- sum(mag_fft_matrix * mask)
+    alta_freq <- sum(mag_fft_matrix * (1 - mask))
+    
+    # Se guardan las características en la matriz
+    # Tendremos dos columnas: energía de frecuencias bajas y altas para cada imagen.
+    caracteristicas_fft[j, 1] <- baja_freq
+    caracteristicas_fft[j, 2] <- alta_freq
+  }
+  
+  return(caracteristicas_fft)
+}
+
+# Empleo de la función
+caracteristicas_frecuencia <- extraer_caracteristicas_fft(imagenes_train)
+
+# Mostrar las características extraídas
+print(caracteristicas_frecuencia)
+
+```
+En imágenes, frecuencia describe cómo cambian los valores de los píxeles (intensidades o colores) a lo largo de la imagen.De hecho, frecuencias bajas representan cambios lentos y suaves, como áreas de color uniforme o gradientes suaves, como el brillo general o la uniformidad (útil para detectar nublado y noche).De la misma manera, frecuencias altas representan cambios rápidos, como bordes, texturas, detalles finos o ruido (útil para imagenes de día y soleado).
