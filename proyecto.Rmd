@@ -185,3 +185,67 @@ length(imagenes_test)   # Número de imágenes reescaladas en test
 plot(imagenes_train[[1]])
 
 ```
+```{r}
+imagenes_train[[1]]
+```
+
+
+```{r}
+###########
+### RGB ###
+###########
+
+# Crea una matriz para almacenar los valores medianos de R, G y B para el conjunto de train
+# Usamos las imagenes reescaladas!!!
+RGB_train <- matrix(0, nrow = length(imagenes_train), ncol = 3)
+
+# Itera sobre las imágenes
+for (j in 1:length(imagenes_train)) {
+  # Obtén la imagen directamente del vector
+  z <- imagenes_train[[j]]
+  # Calcula la mediana de cada canal de color
+  RGB_train[j, 1] = median(z[,,1]) #R
+  RGB_train[j, 2] = median(z[,,2]) #G
+  RGB_train[j, 3] = median(z[,,3]) #B
+}
+
+# Crea una matriz para almacenar los valores medianos de R, G y B para el conjunto de test
+# Usamos las imagenes reescaladas!!!
+RGB_test <- matrix(0, nrow = length(imagenes_test), ncol = 3)
+
+# Itera sobre las imágenes
+for (j in 1:length(imagenes_test)) {
+  # Obtén la imagen directamente del vector
+  z <- imagenes_test[[j]]
+  # Calcula la mediana de cada canal de color
+  RGB_test[j, 1] = median(z[,,1]) #R
+  RGB_test[j, 2] = median(z[,,2]) #G
+  RGB_test[j, 3] = median(z[,,3]) #B
+}
+
+```
+
+```{r}
+###########
+### HSV ###
+###########
+
+# Matrices para almacenar los valores HSV para los conjuntos de entrenamiento y prueba
+HSV_train <- matrix(0, nrow = nrow(RGB_train), ncol = 3)
+HSV_test <- matrix(0, nrow = nrow(RGB_test), ncol = 3)
+
+for (i in 1:nrow(RGB_train)) {
+  HSV_train[i, ] <- rgb2hsv( RGB_train[i, 1], RGB_train[i, 2], RGB_train[i, 3])
+  HSV_train[i,1] <- atan2(mean(sin(HSV_train[i, 1] * 2 * pi)), mean(cos(HSV_train[i, 1] * 2 * pi))) / (2 * pi) # es el arctg del angulo del que le doy sin y cos, entre 0 y 1, estoy desaciendo la circularidad, dando más peso a la H
+}
+
+for (i in 1:nrow(RGB_test)) {
+  HSV_test[i, ] <- rgb2hsv(RGB_test[i, 1], RGB_test[i, 2], RGB_test[i, 3])
+  HSV_test[i,1] <- atan2(mean(sin(HSV_test[i, 1] * 2 * pi)), mean(cos(HSV_test[i, 1] * 2 * pi))) / (2 * pi) 
+}
+```
+
+```{r}
+HSV_test
+```
+
