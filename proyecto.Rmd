@@ -275,11 +275,7 @@ car_estadisticas_test <- calcular_estadisticas(imagenes_test)
 print(car_estadisticas_train)
 ```
 
-
-
-
-
-
+Hue, Saturation, Value, HSV, (Tono Saturación Valor) es un modelo de color alternativo al RGB. El Tono (H) son los tres colores primarios y los tres secundarios de la rueda cromática. La Saturación (S) es la pureza e intensidad del color; cuanto más baja sea, más se acercará el color al gris. El Valor (V) se refiere a la claridad u oscuridad relativa de un color. Cada uno de estos valores tiene un límite; H va de 0-360, S y V van de 0-100.
 
 ```{r}
 ###########
@@ -300,6 +296,8 @@ for (i in 1:nrow(RGB_test)) {
   HSV_test[i,1] <- atan2(mean(sin(HSV_test[i, 1] * 2 * pi)), mean(cos(HSV_test[i, 1] * 2 * pi))) / (2 * pi) 
 }
 ```
+
+
 
 IDEA: Las imágenes de día o soleadas pueden tener más variación de alta frecuencia debido a sombras y detalles, mientras que las de noche o nublado pueden tener más componentes de baja frecuencia.
 
@@ -331,7 +329,7 @@ extraer_caracteristicas_fft <- function(imagenes_train) {
     # Espectro de frecuencias (magnitud del FFT)
     mag_fft <- Mod(fft_img)
     
-    # Reestructurar como una matriz 2D para análisis
+    # Reestructuramos como una matriz 2D para análisis
     mag_fft_matrix <- matrix(mag_fft, nrow = dim(img)[1], ncol = dim(img)[2])
     
     # Partición en frecuencias bajas y altas
@@ -365,11 +363,12 @@ extraer_caracteristicas_fft <- function(imagenes_train) {
 }
 
 # Empleo de la función
-caracteristicas_frecuencia <- extraer_caracteristicas_fft(imagenes_train)
+car_frecuencia_train <- extraer_caracteristicas_fft(imagenes_train)
+car_frecuencia_test <- extraer_caracteristicas_fft(imagenes_test)
 
 # Mostrar las características extraídas
 print(caracteristicas_frecuencia)
 
 ```
-En imágenes, frecuencia describe cómo cambian los valores de los píxeles (intensidades o colores) a lo largo de la imagen.De hecho, frecuencias bajas representan cambios lentos y suaves, como áreas de color uniforme o gradientes suaves, como el brillo general o la uniformidad (útil para detectar nublado y noche).De la misma manera, frecuencias altas representan cambios rápidos, como bordes, texturas, detalles finos o ruido (útil para imagenes de día y soleado).
+En imágenes, la frecuencia describe cómo cambian los valores de los píxeles (intensidades o colores) a lo largo de la imagen.De hecho, frecuencias bajas representan cambios lentos y suaves, como áreas de color uniforme o gradientes suaves, como el brillo general o la uniformidad (útil para detectar nublado y noche).De la misma manera, frecuencias altas representan cambios rápidos, como bordes, texturas, detalles finos o ruido (útil para imagenes de día y soleado).
 Aplicando la Transformada de Fourier a la imagen, analizamos cómo cambian las intensidades en términos de frecuencias y lo que obtenemos es una matriz con las frecuencias bajas en el centro y las frecuencias altas hacia las esquinas.Para poder separar las frecuencias, usamos una máscara circular de valor 1 en el área definida por el radio y 0 fuera de ella, para frecuencias bajas y el complemento de dicha máscara para frecuencias altas bajas. Ahora que tenemos la división hecha, lo único que falta es el cálculo de la energía, que lo obtenemos simplemente sumando el valor absoluto (magnitud) de las componentes de frecuencia dentro de cada región (baja y alta). Esto nos da una medida de cuánta información está contenida en cada rango de frecuencias. 
