@@ -185,10 +185,6 @@ length(imagenes_test)   # Número de imágenes reescaladas en test
 plot(imagenes_train[[1]])
 
 ```
-```{r}
-imagenes_train[[1]]
-```
-
 
 ```{r}
 ###########
@@ -224,6 +220,66 @@ for (j in 1:length(imagenes_test)) {
 }
 
 ```
+
+Además de la mediana, podemos extraer características estadísticas avanzadas de las imágenes, como Skewness, Kurtosis y contraste promedio, para capturar patrones únicos en la distribución de los valores de color o brillo. Estas métricas son útiles porque nos dan información sobre la variabilidad, la forma y la dispersión de los datos, complementando otras características como las medianas de los canales RGB o HSV.
+
+La Skewness (Asimetría) mide si los datos están distribuidos simétricamente o tienen un sesgo hacia un lado:
+•	Si el valor es cero, la distribución es simétrica.
+•	Si es positivo, los valores tienden a acumularse en el lado izquierdo (cola derecha larga).
+•	Si es negativo, los valores se acumulan en el lado derecho (cola izquierda larga).
+En el procesamiento de imágenes un sesgo positivo o negativo en los canales RGB puede indicar colores predominantes o niveles de brillo desbalanceados, como cielos brillantes o áreas oscuras.
+
+La Kurtosis es una medida de la forma de la distribución de las intensidades de píxeles en las imágenes digitales. Un alto valor de Kurtosis (>3) indica que los datos tienen un pico más alto colas más pesadas que una distribución normal (Puede representar imágenes con áreas uniformes y pocos bordes), mientras que un valor de Kurtosis bajo (<3) indica que la distribución es más plana y tiene colas más ligeras que una distribución normal (Puede representar imágenes con variabilidad uniforme, como cielos nublados).
+
+El contraste promedio mide la diferencia media de intensidad entre píxeles adyacentes en una imagen. Es útil para evaluar la "nitidez" de los patrones, donde un contraste alto indica bordes marcados y transiciones abruptas, típico en imágenes soleadas con sombras fuertes y un contraste bajo indica transiciones suaves, típico en imágenes nubladas o nocturnas.
+
+La idea es hacer un análisis combinado usando todas estas métricas juntas como un vector de características (ejemplo: [skew_R, skew_G, skew_B, kurtosis_R, kurtosis_G, kurtosis_B, contraste])
+
+```{r}
+library(e1071)  # Para skewness y kurtosis
+
+calcular_estadisticas <- function(imagenes_train) {
+  # Crear una matriz para las características
+  estadisticas <- matrix(0, nrow = length(imagenes_train), ncol = 7)
+  colnames(estadisticas) <- c("skew_R", "skew_G", "skew_B", 
+                               "kurtosis_R", "kurtosis_G", "kurtosis_B",
+                               "contraste")
+  
+  for (j in 1:length(imagenes_train)) {
+    img <- imagenes_train[[j]]
+    
+    # Separación canales
+    R <- as.numeric(img[,,1])
+    G <- as.numeric(img[,,2])
+    B <- as.numeric(img[,,3])
+    
+    # skewness y kurtosis
+    estadisticas[j, 1] <- skewness(R)
+    estadisticas[j, 2] <- skewness(G)
+    estadisticas[j, 3] <- skewness(B)
+    estadisticas[j, 4] <- kurtosis(R)
+    estadisticas[j, 5] <- kurtosis(G)
+    estadisticas[j, 6] <- kurtosis(B)
+    
+    # Contraste (desviación estándar del brillo promedio)
+    brillo <- rowMeans(img, dims = 2) # Calcula el brillo promedio de cada fila de píxeles en la imagen, a lo largo de los canales (dims = 2)
+    estadisticas[j, 7] <- sd(brillo)
+  }
+  
+  return(estadisticas)
+}
+
+# Usar la función con el vector de imágenes
+car_estadisticas_train <- calcular_estadisticas(imagenes_train)
+car_estadisticas_test <- calcular_estadisticas(imagenes_test)
+print(car_estadisticas_train)
+```
+
+
+
+
+
+
 
 ```{r}
 ###########
