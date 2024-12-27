@@ -16,6 +16,14 @@ library(class)
 library(caret)
 library(imager)
 library(magick)
+library(e1071)    # Para SVR y SVM
+library(xgboost)  # Para XGBoost
+library(dplyr)    # Para manipulación de datos
+library(randomForest) # Para Random Forest
+library(mlbench)  # Para selección de características
+library(Rtsne)    # Para visualización t-SNE
+library(ggplot2)
+library(plotly)
 
 
 # Establecer la semilla para reproducibilidad
@@ -367,8 +375,117 @@ car_frecuencia_train <- extraer_caracteristicas_fft(imagenes_train)
 car_frecuencia_test <- extraer_caracteristicas_fft(imagenes_test)
 
 # Mostrar las características extraídas
-print(caracteristicas_frecuencia)
-
+print(car_frecuencia_train)
+print(car_frecuencia_test)
 ```
 En imágenes, la frecuencia describe cómo cambian los valores de los píxeles (intensidades o colores) a lo largo de la imagen.De hecho, frecuencias bajas representan cambios lentos y suaves, como áreas de color uniforme o gradientes suaves, como el brillo general o la uniformidad (útil para detectar nublado y noche).De la misma manera, frecuencias altas representan cambios rápidos, como bordes, texturas, detalles finos o ruido (útil para imagenes de día y soleado).
-Aplicando la Transformada de Fourier a la imagen, analizamos cómo cambian las intensidades en términos de frecuencias y lo que obtenemos es una matriz con las frecuencias bajas en el centro y las frecuencias altas hacia las esquinas.Para poder separar las frecuencias, usamos una máscara circular de valor 1 en el área definida por el radio y 0 fuera de ella, para frecuencias bajas y el complemento de dicha máscara para frecuencias altas bajas. Ahora que tenemos la división hecha, lo único que falta es el cálculo de la energía, que lo obtenemos simplemente sumando el valor absoluto (magnitud) de las componentes de frecuencia dentro de cada región (baja y alta). Esto nos da una medida de cuánta información está contenida en cada rango de frecuencias. 
+Aplicando la Transformada de Fourier a la imagen, analizamos cómo cambian las intensidades en términos de frecuencias y lo que obtenemos es una matriz con las frecuencias bajas en el centro y las frecuencias altas hacia las esquinas.Para poder separar las frecuencias, usamos una máscara circular de valor 1 en el área definida por el radio y 0 fuera de ella, para frecuencias bajas y el complemento de dicha máscara para frecuencias altas bajas. Ahora que tenemos la división hecha, lo único que falta es el cálculo de la energía, que lo obtenemos simplemente sumando el valor absoluto (magnitud) de las componentes de frecuencia dentro de cada región (baja y alta). Esto nos da una medida de cuánta información está contenida en cada rango de frecuencias.
+
+```{r}
+#########################################
+# Entrenamiento de modelos #
+#########################################
+# Juntar las matrices de entrenamiento y prueba
+car_estadisticas_train <- as.data.frame(car_estadisticas_train)
+car_frecuencia_train <- as.data.frame(car_frecuencia_train)
+hsv_train <- as.data.frame(HSV_train)
+rgb_train <- as.data.frame(RGB_train)
+hsv_test <- as.data.frame(HSV_test)
+rgb_test <- as.data.frame(RGB_test)
+
+# Concatenar todas las features para el conjunto de entrenamiento y prueba
+X_train <- cbind(car_estadisticas_train, car_frecuencia_train, hsv_train, rgb_train)
+X_test <- cbind(car_estadisticas_test, car_frecuencia_test, hsv_test, rgb_test)
+
+# Convertir las etiquetas a formato factor
+meta_train$etiqueta <- as.factor(meta_train$etiqueta)
+meta_test$etiqueta <- as.factor(meta_test$etiqueta)
+
+y_train <- meta_train$etiqueta
+y_test <- meta_test$etiqueta
+
+# Visualización inicial con t-SNE en 3D
+tsne_result <- Rtsne(as.matrix(X_train), dims = 3, perplexity = 30, verbose = TRUE, max_iter = 500)
+tsne_data <- as.data.frame(tsne_result$Y)
+tsne_data$Etiqueta <- y_train
+
+# Crear el gráfico 3D usando plotly
+fig <- plot_ly(tsne_data, x = ~V1, y = ~V2, z = ~V3, color = ~Etiqueta, colors = RColorBrewer::brewer.pal(9, "Set1"),
+               marker = list(size = 5, opacity = 0.7, line = list(width = 0.5, color = 'black'))) %>%
+  layout(title = "Visualización de t-SNE en 3D",
+         scene = list(xaxis = list(title = "Dimensión 1"),
+                      yaxis = list(title = "Dimensión 2"),
+                      zaxis = list(title = "Dimensión 3")))
+
+# Mostrar el gráfico
+fig
+
+# Entrenar y evaluar modelos
+
+# Definir una función para calcular métricas de evaluación
+evaluar_modelo <- function(predicciones, reales) {
+  confusion <- confusionMatrix(as.factor(predicciones), as.factor(reales))
+  print(confusion)
+  
+  precision <- confusion$byClass["Pos Pred Value"]
+  recall <- confusion$byClass["Sensitivity"]
+
+  return(list(
+    Accuracy = confusion$overall["Accuracy"],
+    Kappa = confusion$overall["Kappa"],
+    Precision = precision,
+    Recall = recall
+    ))
+}
+
+# Modelo 1: SVR (Support Vector Classifier)
+modelo_svr <- svm(X_train, y = y_train, type = "C-classification", kernel = "radial", cost = 1, gamma = 0.1)
+predicciones_svr <- predict(modelo_svr, X_test)
+cat("\nEvaluación del modelo SVR:\n")
+metricas_svr <- evaluar_modelo(predicciones_svr, y_test)
+
+# Modelo 2: XGBoost
+# Convertir los datos a formato de matriz para XGBoost
+X_train_matrix <- as.matrix(X_train)
+X_test_matrix <- as.matrix(X_test)
+dtrain <- xgb.DMatrix(data = X_train_matrix, label = as.numeric(y_train) - 1)
+dtest <- xgb.DMatrix(data = X_test_matrix, label = as.numeric(y_test) - 1)
+
+param <- list(objective = "multi:softmax", num_class = length(levels(y_train)))
+modelo_xgb <- xgboost(params = param, data = dtrain, nrounds = 100, verbose = 0)
+predicciones_xgb <- predict(modelo_xgb, dtest)
+predicciones_xgb <- factor(predicciones_xgb, levels = 0:(length(levels(y_train)) - 1), labels = levels(y_train))
+cat("\nEvaluación del modelo XGBoost:\n")
+metricas_xgb <- evaluar_modelo(predicciones_xgb, y_test)
+
+# Modelo 3: KNN
+# Elegir el valor de k (puedes ajustar este valor para mejorar el rendimiento)
+k <- 7
+predicciones_knn <- knn(train = X_train, test = X_test, cl = y_train, k = k)
+cat("\nEvaluación del modelo KNN:\n")
+metricas_knn <- evaluar_modelo(predicciones_knn, y_test)
+
+# Modelo 4: Random Forest
+modelo_rf <- randomForest(x = X_train, y = y_train, ntree = 100, mtry = sqrt(ncol(X_train)), importance = TRUE)
+predicciones_rf <- predict(modelo_rf, X_test)
+cat("\nEvaluación del modelo Random Forest:\n")
+metricas_rf <- evaluar_modelo(predicciones_rf, y_test)
+
+# Modelo 5: Naive Bayes
+modelo_nb <- naiveBayes(X_train, y_train)
+predicciones_nb <- predict(modelo_nb, X_test)
+cat("\nEvaluación del modelo Naive Bayes:\n")
+metricas_nb <- evaluar_modelo(predicciones_nb, y_test)
+
+# Resumen de resultados
+resultados <- data.frame(
+  Modelo = c("SVR", "XGBoost", "KNN", "Random Forest", "Naive Bayes"),
+  Accuracy = c(metricas_svr$Accuracy, metricas_xgb$Accuracy, metricas_knn$Accuracy, metricas_rf$Accuracy, metricas_nb$Accuracy),
+  Kappa = c(metricas_svr$Kappa, metricas_xgb$Kappa, metricas_knn$Kappa, metricas_rf$Kappa, metricas_nb$Kappa),
+)
+
+print("\nResumen de resultados:")
+print(resultados)
+
+```
+
