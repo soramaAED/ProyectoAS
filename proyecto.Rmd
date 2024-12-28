@@ -247,10 +247,10 @@ library(e1071)  # Para skewness y kurtosis
 
 calcular_estadisticas <- function(imagenes_train) {
   # Crear una matriz para las características
-  estadisticas <- matrix(0, nrow = length(imagenes_train), ncol = 7)
+  estadisticas <- matrix(0, nrow = length(imagenes_train), ncol = 13)
   colnames(estadisticas) <- c("skew_R", "skew_G", "skew_B", 
-                               "kurtosis_R", "kurtosis_G", "kurtosis_B",
-                               "contraste")
+                               "kurtosis_R", "kurtosis_G", "kurtosis_B", "brillo_medio",
+                               "contraste", "porc_claros", "porc_oscuros", "gris", "oscuro", "claro")
   
   for (j in 1:length(imagenes_train)) {
     img <- imagenes_train[[j]]
@@ -270,7 +270,25 @@ calcular_estadisticas <- function(imagenes_train) {
     
     # Contraste (desviación estándar del brillo promedio)
     brillo <- rowMeans(img, dims = 2) # Calcula el brillo promedio de cada fila de píxeles en la imagen, a lo largo de los canales (dims = 2)
-    estadisticas[j, 7] <- sd(brillo)
+    estadisticas[j, 7] <- mean(brillo)
+    estadisticas[j, 8] <- sd(brillo)
+    estadisticas[j, 9] <- (sum(brillo > 0.7) / length(brillo)) * 100
+    estadisticas[j, 10] <- (sum(brillo < 0.3) / length(brillo)) * 100
+    
+    # 1. Gris (nublado): R, G y B casi iguales
+    gris <- abs(R - G) < 0.1 & abs(G - B) < 0.1 & abs(R - B) < 0.1
+
+    # 2. Negro azulado (noche): Baja intensidad en R y G, pero alta en B
+    negro_azulado <- R < 0.2 & G < 0.2 & B > 0.4
+
+    # 3. Azul claro (soleado): Alta intensidad en B, con R y G moderados
+    azul_claro <- R > 0.4 & G > 0.4 & B > 0.6
+
+    # Calcular el porcentaje de píxeles en cada color
+    estadisticas[j, 11] <- sum(gris) / length(gris) * 100
+    estadisticas[j, 12] <- sum(negro_azulado) / length(negro_azulado) * 100
+    estadisticas[j, 13] <- sum(azul_claro) / length(azul_claro) * 100
+
   }
   
   return(estadisticas)
@@ -379,6 +397,78 @@ print(car_frecuencia_test)
 ```
 En imágenes, la frecuencia describe cómo cambian los valores de los píxeles (intensidades o colores) a lo largo de la imagen.De hecho, frecuencias bajas representan cambios lentos y suaves, como áreas de color uniforme o gradientes suaves, como el brillo general o la uniformidad (útil para detectar nublado y noche).De la misma manera, frecuencias altas representan cambios rápidos, como bordes, texturas, detalles finos o ruido (útil para imagenes de día y soleado).
 Aplicando la Transformada de Fourier a la imagen, analizamos cómo cambian las intensidades en términos de frecuencias y lo que obtenemos es una matriz con las frecuencias bajas en el centro y las frecuencias altas hacia las esquinas.Para poder separar las frecuencias, usamos una máscara circular de valor 1 en el área definida por el radio y 0 fuera de ella, para frecuencias bajas y el complemento de dicha máscara para frecuencias altas bajas. Ahora que tenemos la división hecha, lo único que falta es el cálculo de la energía, que lo obtenemos simplemente sumando el valor absoluto (magnitud) de las componentes de frecuencia dentro de cada región (baja y alta). Esto nos da una medida de cuánta información está contenida en cada rango de frecuencias.
+
+
+
+## Transformada Wavelet 
+
+La Transformada Wavelet es una herramienta que descompone una imagen en componentes de frecuencia de diferentes resoluciones. Esto es útil para capturar detalles a diferentes escalas en la imagen.
+
+```{r}
+#########################################
+# Características basadas en Wavelet #
+#########################################
+
+library(waveslim)
+library(wavelets)
+
+# Modificar el código para obtener las sub-bandas como columnas
+extraer_caracteristicas_wavelet_detalladas <- function(imagenes_train) {
+  # Crea una matriz para almacenar las características (ahora con 4 columnas)
+  caracteristicas_wavelet <- matrix(0, nrow = length(imagenes_train), ncol = 4)
+  colnames(caracteristicas_wavelet) <- c("LL_Baja_Frecuencia", "LH_Alta_Frecuencia", "HL_Alta_Frecuencia", "HH_Alta_Frecuencia")
+  
+  # Iteramos sobre cada imagen
+  for (j in 1:length(imagenes_train)) {
+    # Carga la imagen
+    img <- imagenes_train[[j]]
+    
+    # Conversión a escala de grises si tiene 3 canales (RGB)
+    if (dim(img)[3] == 3) {
+      img <- grayscale(as.cimg(img))
+    }
+    
+    # Convertimos la imagen a una matriz numérica
+    img_matrix <- as.numeric(img)
+    img_matrix <- matrix(img_matrix, nrow = dim(img)[1], ncol = dim(img)[2])
+    
+    # Transformada Wavelet 2D
+    wavelet_img <- dwt(img_matrix, filter = "haar", n.levels = 3)
+    
+    # Extraer sub-bandas
+    LL <- wavelet_img$LL
+    LH <- wavelet_img$LH
+    HL <- wavelet_img$HL
+    HH <- wavelet_img$HH
+    
+    # Cálculo de la energía de cada sub-banda
+    LL_energy <- sum(LL^2)
+    LH_energy <- sum(LH^2)
+    HL_energy <- sum(HL^2)
+    HH_energy <- sum(HH^2)
+    
+    # Guardar las características
+    caracteristicas_wavelet[j, 1] <- LL_energy
+    caracteristicas_wavelet[j, 2] <- LH_energy
+    caracteristicas_wavelet[j, 3] <- HL_energy
+    caracteristicas_wavelet[j, 4] <- HH_energy
+  }
+  
+  return(caracteristicas_wavelet)
+}
+
+# Empleo de la nueva función
+car_wavelet_train_detalladas <- extraer_caracteristicas_wavelet_detalladas(imagenes_train)
+car_wavelet_test_detalladas <- extraer_caracteristicas_wavelet_detalladas(imagenes_test)
+
+# Mostrar las características extraídas
+print(car_wavelet_train_detalladas)
+print(car_wavelet_test_detalladas)
+
+```
+
+
+## Enetrenamiento de modelos
 
 ```{r}
 #########################################
