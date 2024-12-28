@@ -25,7 +25,6 @@ library(Rtsne)    # Para visualización t-SNE
 library(ggplot2)
 library(plotly)
 
-
 # Establecer la semilla para reproducibilidad
 set.seed(42)
 ```
@@ -386,10 +385,14 @@ Aplicando la Transformada de Fourier a la imagen, analizamos cómo cambian las i
 # Entrenamiento de modelos #
 #########################################
 # Juntar las matrices de entrenamiento y prueba
+
 car_estadisticas_train <- as.data.frame(car_estadisticas_train)
 car_frecuencia_train <- as.data.frame(car_frecuencia_train)
 hsv_train <- as.data.frame(HSV_train)
 rgb_train <- as.data.frame(RGB_train)
+
+car_estadisticas_test <- as.data.frame(car_estadisticas_test)
+car_frecuencia_test <- as.data.frame(car_frecuencia_test)
 hsv_test <- as.data.frame(HSV_test)
 rgb_test <- as.data.frame(RGB_test)
 
@@ -420,6 +423,23 @@ fig <- plot_ly(tsne_data, x = ~V1, y = ~V2, z = ~V3, color = ~Etiqueta, colors =
 # Mostrar el gráfico
 fig
 
+# Visualización con PCA en 3D
+pca_result <- prcomp(scale(as.matrix(X_train)), center = TRUE, scale. = TRUE)
+pca_data <- pca_result$x
+pca_df <- data.frame(PC1 = pca_data[, 1], PC2 = pca_data[, 2], PC3 = pca_data[,3])
+pca_df$Etiqueta <- y_train
+
+# Crear el gráfico 3D usando plotly
+fig2 <- plot_ly(pca_df, x = ~pca_df[,1], y = ~pca_df[,2], z = ~pca_df[,3], color = ~Etiqueta, colors = RColorBrewer::brewer.pal(9, "Set1"),
+               marker = list(size = 5, opacity = 0.7, line = list(width = 0.5, color = 'black'))) %>%
+  layout(title = "Visualización de PCA en 3D",
+         scene = list(xaxis = list(title = "Dimensión 1"),
+                      yaxis = list(title = "Dimensión 2"),
+                      zaxis = list(title = "Dimensión 3")))
+
+fig2
+
+
 # Entrenar y evaluar modelos
 
 # Definir una función para calcular métricas de evaluación
@@ -437,6 +457,7 @@ evaluar_modelo <- function(predicciones, reales) {
     Recall = recall
     ))
 }
+
 
 # Modelo 1: SVR (Support Vector Classifier)
 modelo_svr <- svm(X_train, y = y_train, type = "C-classification", kernel = "radial", cost = 1, gamma = 0.1)
@@ -481,7 +502,7 @@ metricas_nb <- evaluar_modelo(predicciones_nb, y_test)
 resultados <- data.frame(
   Modelo = c("SVR", "XGBoost", "KNN", "Random Forest", "Naive Bayes"),
   Accuracy = c(metricas_svr$Accuracy, metricas_xgb$Accuracy, metricas_knn$Accuracy, metricas_rf$Accuracy, metricas_nb$Accuracy),
-  Kappa = c(metricas_svr$Kappa, metricas_xgb$Kappa, metricas_knn$Kappa, metricas_rf$Kappa, metricas_nb$Kappa),
+  Kappa = c(metricas_svr$Kappa, metricas_xgb$Kappa, metricas_knn$Kappa, metricas_rf$Kappa, metricas_nb$Kappa)
 )
 
 print("\nResumen de resultados:")
