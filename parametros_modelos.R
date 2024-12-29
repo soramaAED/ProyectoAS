@@ -11,6 +11,8 @@ best_accuracy <- 0
 
 for (i in 1:nrow(tune_grid)) {
   set.seed(123)
+  
+  #Ajuste del modelo
   modelo_svr <- svm(
     X_train, y = y_train,
     type = "C-classification",
@@ -22,7 +24,7 @@ for (i in 1:nrow(tune_grid)) {
   # Predicciones
   predicciones <- predict(modelo_svr, X_test)
   
-  # Calcular la precisión
+  # Evaluar precisión
   accuracy <- mean(predicciones == y_test)
   
   # Guardar el mejor modelo
@@ -42,7 +44,7 @@ cat("Cost:", best_model$cost, "\nGamma:", best_model$gamma, "\n")
 
 tune_grid <- expand.grid(
   mtry = c(2, sqrt(ncol(X_train)), ncol(X_train) / 2),  # Variables por split
-  ntree = c(100, 200, 500)                                           # Número de árboles
+  ntree = c(100, 200, 500)  # Número de árboles
 )
 
 best_model <- NULL
@@ -50,6 +52,8 @@ best_accuracy <- 0
 
 for (i in 1:nrow(tune_grid)) {
   set.seed(123)
+  
+  #Ajuste del modelo
   modelo_rf_tuned <- randomForest(
     x = X_train,
     y = y_train,
@@ -61,7 +65,7 @@ for (i in 1:nrow(tune_grid)) {
   # Predicciones
   predicciones <- predict(modelo_rf, X_test)
   
-  # Calcular la precisión
+  # Evaluar precisión
   accuracy <- mean(predicciones == y_test)
   
   # Guardar el mejor modelo
@@ -86,7 +90,7 @@ X_test_matrix <- as.matrix(X_test)
 dtrain <- xgb.DMatrix(data = X_train_matrix, label = as.numeric(y_train) - 1)
 dtest <- xgb.DMatrix(data = X_test_matrix, label = as.numeric(y_test) - 1)
 
-# Búsqueda de hiperparámetros manual
+# Búsqueda de hiperparámetros
 tune_grid <- expand.grid(
   eta = c(0.01, 0.1, 0.3),       # Tasa de aprendizaje
   max_depth = c(3, 6, 9),        # Profundidad máxima de los árboles
@@ -99,6 +103,8 @@ best_params <- NULL
 
 for (i in 1:nrow(tune_grid)) {
   set.seed(123)
+  
+  #Ajuste del modelo
   modelo_xgb <- xgboost(
     params = list(
       objective = "multi:softmax", 
@@ -112,7 +118,7 @@ for (i in 1:nrow(tune_grid)) {
     verbose = 0
   )
   
-  # Predicciones en el conjunto de prueba
+  # Predicciones
   predicciones <- predict(modelo_xgb, dtest)
   predicciones <- factor(predicciones, levels = 0:(length(levels(y_train)) - 1), labels = levels(y_train))
   
@@ -127,7 +133,6 @@ for (i in 1:nrow(tune_grid)) {
   }
 }
 
-# Mostrar los mejores hiperparámetros
 cat("\nMejor modelo encontrado con:\n")
 print(best_params)
 
@@ -143,10 +148,10 @@ best_accuracy <- 0
 for (k in valoresk) {
   set.seed(123)
   
-  #Predicciones
+  # Predicciones
   predicciones_knn <- knn(train = X_train, test = X_test, cl = y_train, k = k)
   
-  # Calcular la precisión
+  # Evaluar precisión
   accuracy <- mean(predicciones_knn == y_test)
   
   # Guardar el mejor modelo
@@ -157,7 +162,6 @@ for (k in valoresk) {
   }
 }
 
-# Mostrar los mejores hiperparámetros
 cat("Mejor modelo encontrado con k =", best_k, "\n")
 cat("Precisión obtenida con k =", best_k, ":", best_accuracy, "\n")
 
@@ -168,9 +172,6 @@ cat("Precisión obtenida con k =", best_k, ":", best_accuracy, "\n")
 
 library(e1071)
 
-# Suponiendo que tienes tus datos de entrenamiento y prueba (X_train, y_train)
-# Probar diferentes valores de laplace
-
 valores_laplace <- c(0, 0.5, 1, 2)
 
 best_model <- NULL
@@ -178,7 +179,8 @@ best_accuracy <- 0
 best_laplace <- NULL
 
 for (laplace in valores_laplace) {
-  # Ajustar el modelo Naive Bayes con el valor de laplace
+  
+  # Ajustar del modelo
   modelo_nb <- naiveBayes(x = X_train, y = y_train, laplace = laplace)
   
   # Hacer las predicciones
@@ -187,7 +189,7 @@ for (laplace in valores_laplace) {
   # Calcular la precisión
   accuracy <- mean(predicciones == y_test)
   
-  # Si la precisión es mejor, guardar el modelo
+  # Guardar el mejor modelo
   if (accuracy > best_accuracy) {
     best_accuracy <- accuracy
     best_model <- modelo_nb
@@ -201,7 +203,7 @@ cat("Mejor modelo con Laplace =", best_laplace, "con precisión de", best_accura
 
 ############################################################ Logistico ###############################################################
 
-library(glmnet)
+library(nnet)
 
 # Definir el espacio de búsqueda de los hiperparámetros
 tune_grid <- expand.grid(
@@ -209,15 +211,14 @@ tune_grid <- expand.grid(
   lambda = 10^seq(-4, 1, by = 0.5)  # Valores de lambda en una escala logarítmica
 )
 
-# Ajustar un modelo utilizando cross-validation para cada combinación de hiperparámetros
 best_model <- NULL
 best_accuracy <- 0
 
 for (i in 1:nrow(tune_grid)) {
   set.seed(123)
   
-  # Entrenar el modelo con los parámetros actuales
-  modelo_logistico <- glmnet(X_train, y_train, family = "binomial", alpha = tune_grid$alpha[i], lambda = tune_grid$lambda[i], family = "multinomial"
+  # Ajuste del modelo
+  modelo_logistico <- multinom(X_train, y_train, family = "binomial", alpha = tune_grid$alpha[i], lambda = tune_grid$lambda[i])
   
   # Realizar predicciones usando el modelo entrenado
   predicciones <- predict(modelo_logistico, X_test, s = tune_grid$lambda[i], type = "response")

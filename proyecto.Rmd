@@ -404,82 +404,10 @@ car_frecuencia_test <- extraer_caracteristicas_fft(imagenes_test)
 print(car_frecuencia_train)
 print(car_frecuencia_test)
 ```
+
 En imágenes, la frecuencia describe cómo cambian los valores de los píxeles (intensidades o colores) a lo largo de la imagen.De hecho, frecuencias bajas representan cambios lentos y suaves, como áreas de color uniforme o gradientes suaves, como el brillo general o la uniformidad (útil para detectar nublado y noche).De la misma manera, frecuencias altas representan cambios rápidos, como bordes, texturas, detalles finos o ruido (útil para imagenes de día y soleado).
 Aplicando la Transformada de Fourier a la imagen, analizamos cómo cambian las intensidades en términos de frecuencias y lo que obtenemos es una matriz con las frecuencias bajas en el centro y las frecuencias altas hacia las esquinas.Para poder separar las frecuencias, usamos una máscara circular de valor 1 en el área definida por el radio y 0 fuera de ella, para frecuencias bajas y el complemento de dicha máscara para frecuencias altas bajas. Ahora que tenemos la división hecha, lo único que falta es el cálculo de la energía, que lo obtenemos simplemente sumando el valor absoluto (magnitud) de las componentes de frecuencia dentro de cada región (baja y alta). Esto nos da una medida de cuánta información está contenida en cada rango de frecuencias.
 
-
-
-## Transformada Wavelet 
-
-La Transformada Wavelet es una herramienta que descompone una imagen en componentes de frecuencia de diferentes resoluciones. Esto es útil para capturar detalles a diferentes escalas en la imagen.
-
-```{r}
-#########################################
-# Características basadas en Wavelet #
-#########################################
-
-library(waveslim)
-library(wavelets)
-
-# Modificar el código para obtener las sub-bandas como columnas
-extraer_caracteristicas_wavelet_detalladas <- function(imagenes_train) {
-  # Crea una matriz para almacenar las características (ahora con 4 columnas)
-  caracteristicas_wavelet <- matrix(0, nrow = length(imagenes_train), ncol = 4)
-  colnames(caracteristicas_wavelet) <- c("LL_Baja_Frecuencia", "LH_Alta_Frecuencia", "HL_Alta_Frecuencia", "HH_Alta_Frecuencia")
-  
-  # Iteramos sobre cada imagen
-  for (j in 1:length(imagenes_train)) {
-    # Carga la imagen
-    img <- imagenes_train[[j]]
-    
-    if (!all(dim(img) == c(640, 640))) {
-    img <- resize(as.cimg(img), 640, 640)
-    }
-    
-    # Conversión a escala de grises si tiene 3 canales (RGB)
-    if (dim(img)[3] == 3) {
-      img <- grayscale(as.cimg(img))
-    }
-    
-    # Convertimos la imagen a una matriz numérica
-    img_matrix <- as.numeric(img)
-    img_matrix <- matrix(img_matrix, nrow = dim(img)[1], ncol = dim(img)[2])
-    
-    # Transformada Wavelet 2D
-    wavelet_img <- dwt(img_matrix, filter = "haar", n.levels = 3)
-    
-    # Extraer sub-bandas
-    # Acceder a las sub-bandas del primer nivel
-    LL <- slot(wavelet_img, "LL")
-    LH <- slot(wavelet_img, "LH")
-    HL <- slot(wavelet_img, "HL")
-    HH <- slot(wavelet_img, "HH")
-    
-    # Cálculo de la energía de cada sub-banda
-    LL_energy <- sum(LL^2)
-    LH_energy <- sum(LH^2)
-    HL_energy <- sum(HL^2)
-    HH_energy <- sum(HH^2)
-    
-    # Guardar las características
-    caracteristicas_wavelet[j, 1] <- LL_energy
-    caracteristicas_wavelet[j, 2] <- LH_energy
-    caracteristicas_wavelet[j, 3] <- HL_energy
-    caracteristicas_wavelet[j, 4] <- HH_energy
-  }
-  
-  return(caracteristicas_wavelet)
-}
-
-# Empleo de la nueva función
-car_wavelet_train_detalladas <- extraer_caracteristicas_wavelet_detalladas(imagenes_train)
-car_wavelet_test_detalladas <- extraer_caracteristicas_wavelet_detalladas(imagenes_test)
-
-# Mostrar las características extraídas
-print(car_wavelet_train_detalladas)
-print(car_wavelet_test_detalladas)
-
-```
 
 
 ## Enetrenamiento de modelos
@@ -576,8 +504,8 @@ X_test_matrix <- as.matrix(X_test)
 dtrain <- xgb.DMatrix(data = X_train_matrix, label = as.numeric(y_train) - 1)
 dtest <- xgb.DMatrix(data = X_test_matrix, label = as.numeric(y_test) - 1)
 
-param <- list(objective = "multi:softmax", num_class = length(levels(y_train)))
-modelo_xgb <- xgboost(params = param, data = dtrain, nrounds = 100, verbose = 0)
+param <- list(objective = "multi:softmax", num_class = length(levels(y_train)), eta = 0.3, max_depth = 3)
+modelo_xgb <- xgboost(params = param, data = dtrain, nrounds = 50, verbose = 0)
 predicciones_xgb <- predict(modelo_xgb, dtest)
 predicciones_xgb <- factor(predicciones_xgb, levels = 0:(length(levels(y_train)) - 1), labels = levels(y_train))
 cat("\nEvaluación del modelo XGBoost:\n")
