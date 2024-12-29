@@ -189,7 +189,7 @@ length(imagenes_train)  # Número de imágenes reescaladas en train
 length(imagenes_test)   # Número de imágenes reescaladas en test
 
 # Mostrar la primera imagen reescalada
-plot(imagenes_train[[1]])
+plot(imagenes_train[[130]])
 
 ```
 
@@ -212,6 +212,8 @@ for (j in 1:length(imagenes_train)) {
   RGB_train[j, 3] = median(z[,,3]) #B
 }
 
+colnames(RGB_train) <- c("R","G","B")
+
 # Crea una matriz para almacenar los valores medianos de R, G y B para el conjunto de test
 # Usamos las imagenes reescaladas!!!
 RGB_test <- matrix(0, nrow = length(imagenes_test), ncol = 3)
@@ -225,6 +227,8 @@ for (j in 1:length(imagenes_test)) {
   RGB_test[j, 2] = median(z[,,2]) #G
   RGB_test[j, 3] = median(z[,,3]) #B
 }
+
+colnames(RGB_test) <- c("R","G","B")
 
 ```
 
@@ -316,10 +320,15 @@ for (i in 1:nrow(RGB_train)) {
   HSV_train[i,1] <- atan2(mean(sin(HSV_train[i, 1] * 2 * pi)), mean(cos(HSV_train[i, 1] * 2 * pi))) / (2 * pi) # es el arctg del angulo del que le doy sin y cos, entre 0 y 1, estoy desaciendo la circularidad, dando más peso a la H
 }
 
+colnames(HSV_train) <- c("H","S","V")
+
 for (i in 1:nrow(RGB_test)) {
   HSV_test[i, ] <- rgb2hsv(RGB_test[i, 1], RGB_test[i, 2], RGB_test[i, 3])
   HSV_test[i,1] <- atan2(mean(sin(HSV_test[i, 1] * 2 * pi)), mean(cos(HSV_test[i, 1] * 2 * pi))) / (2 * pi) 
 }
+
+colnames(HSV_test) <- c("H","S","V")
+
 ```
 
 
@@ -423,6 +432,10 @@ extraer_caracteristicas_wavelet_detalladas <- function(imagenes_train) {
     # Carga la imagen
     img <- imagenes_train[[j]]
     
+    if (!all(dim(img) == c(640, 640))) {
+    img <- resize(as.cimg(img), 640, 640)
+    }
+    
     # Conversión a escala de grises si tiene 3 canales (RGB)
     if (dim(img)[3] == 3) {
       img <- grayscale(as.cimg(img))
@@ -436,10 +449,11 @@ extraer_caracteristicas_wavelet_detalladas <- function(imagenes_train) {
     wavelet_img <- dwt(img_matrix, filter = "haar", n.levels = 3)
     
     # Extraer sub-bandas
-    LL <- wavelet_img$LL
-    LH <- wavelet_img$LH
-    HL <- wavelet_img$HL
-    HH <- wavelet_img$HH
+    # Acceder a las sub-bandas del primer nivel
+    LL <- slot(wavelet_img, "LL")
+    LH <- slot(wavelet_img, "LH")
+    HL <- slot(wavelet_img, "HL")
+    HH <- slot(wavelet_img, "HH")
     
     # Cálculo de la energía de cada sub-banda
     LL_energy <- sum(LL^2)
@@ -550,7 +564,7 @@ evaluar_modelo <- function(predicciones, reales) {
 
 
 # Modelo 1: SVR (Support Vector Classifier)
-modelo_svr <- svm(X_train, y = y_train, type = "C-classification", kernel = "radial", cost = 1, gamma = 0.1)
+modelo_svr <- svm(X_train, y = y_train, type = "C-classification", kernel = "radial", cost = 10, gamma = 0.1)
 predicciones_svr <- predict(modelo_svr, X_test)
 cat("\nEvaluación del modelo SVR:\n")
 metricas_svr <- evaluar_modelo(predicciones_svr, y_test)
@@ -571,13 +585,13 @@ metricas_xgb <- evaluar_modelo(predicciones_xgb, y_test)
 
 # Modelo 3: KNN
 # Elegir el valor de k (puedes ajustar este valor para mejorar el rendimiento)
-k <- 7
+k <- 6
 predicciones_knn <- knn(train = X_train, test = X_test, cl = y_train, k = k)
 cat("\nEvaluación del modelo KNN:\n")
 metricas_knn <- evaluar_modelo(predicciones_knn, y_test)
 
 # Modelo 4: Random Forest
-modelo_rf <- randomForest(x = X_train, y = y_train, ntree = 100, mtry = sqrt(ncol(X_train)), importance = TRUE)
+modelo_rf <- randomForest(x = X_train, y = y_train, ntree = 100, mtry = 5, importance = TRUE)
 predicciones_rf <- predict(modelo_rf, X_test)
 cat("\nEvaluación del modelo Random Forest:\n")
 metricas_rf <- evaluar_modelo(predicciones_rf, y_test)
@@ -588,11 +602,20 @@ predicciones_nb <- predict(modelo_nb, X_test)
 cat("\nEvaluación del modelo Naive Bayes:\n")
 metricas_nb <- evaluar_modelo(predicciones_nb, y_test)
 
+# Modelo 6: Regresión logística multiclase
+library(nnet)
+
+modelo_logistico <- multinom(y_train ~ ., data = X_train)
+predicciones_logistico <- predict(modelo_logistico, X_test)
+cat("\nEvaluación del modelo de Regresión Logística:\n")
+metricas_logistico <- evaluar_modelo(predicciones_logistico, y_test)
+
+
 # Resumen de resultados
 resultados <- data.frame(
-  Modelo = c("SVR", "XGBoost", "KNN", "Random Forest", "Naive Bayes"),
-  Accuracy = c(metricas_svr$Accuracy, metricas_xgb$Accuracy, metricas_knn$Accuracy, metricas_rf$Accuracy, metricas_nb$Accuracy),
-  Kappa = c(metricas_svr$Kappa, metricas_xgb$Kappa, metricas_knn$Kappa, metricas_rf$Kappa, metricas_nb$Kappa)
+  Modelo = c("SVR", "XGBoost", "KNN", "Random Forest", "Naive Bayes", "Regresión logística"),
+  Accuracy = c(metricas_svr$Accuracy, metricas_xgb$Accuracy, metricas_knn$Accuracy, metricas_rf$Accuracy, metricas_nb$Accuracy, metricas_logistico$Accuracy),
+  Kappa = c(metricas_svr$Kappa, metricas_xgb$Kappa, metricas_knn$Kappa, metricas_rf$Kappa, metricas_nb$Kappa, metricas_logistico$Kappa)
 )
 
 print("\nResumen de resultados:")
