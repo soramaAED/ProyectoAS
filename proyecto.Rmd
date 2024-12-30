@@ -91,7 +91,7 @@ if (file.exists("./particiones_datos.RData")) {
   ###
   
   source("generacionMetadatos.R")
-  
+
   ### 
   ### Importacion datos
   ###
@@ -146,7 +146,7 @@ if (file.exists("./particiones_datos.RData")) {
   pchSymb_test[meta_test$etiqueta == "soleado"] <- 1
   pchSymb_test[meta_test$etiqueta == "nublado"] <- 2
    
-  save(files_train, files_test, pchSymb_train, pchSymb_test, file = "particiones_datos.RData")
+  save(files_train, files_test, pchSymb_train, pchSymb_test, meta_train, meta_test, file = "particiones_datos.RData")
   cat("\nLas particiones han sido guardadas correctamente en el archivo 'particiones_datos.RData'.\n")
 }
 ```
@@ -301,7 +301,13 @@ calcular_estadisticas <- function(imagenes_train) {
 # Usar la función con el vector de imágenes
 car_estadisticas_train <- calcular_estadisticas(imagenes_train)
 car_estadisticas_test <- calcular_estadisticas(imagenes_test)
-print(car_estadisticas_train)
+```
+```{r}
+head(car_estadisticas_train[,1:6])
+
+```
+```{r}
+head(car_estadisticas_train[,7:13])
 ```
 
 Hue, Saturation, Value, HSV, (Tono Saturación Valor) es un modelo de color alternativo al RGB. El Tono (H) son los tres colores primarios y los tres secundarios de la rueda cromática. La Saturación (S) es la pureza e intensidad del color; cuanto más baja sea, más se acercará el color al gris. El Valor (V) se refiere a la claridad u oscuridad relativa de un color. Cada uno de estos valores tiene un límite; H va de 0-360, S y V van de 0-100.
@@ -335,7 +341,7 @@ colnames(HSV_test) <- c("H","S","V")
 
 IDEA: Las imágenes de día o soleadas pueden tener más variación de alta frecuencia debido a sombras y detalles, mientras que las de noche o nublado pueden tener más componentes de baja frecuencia.
 
-```{r}
+```{r, warning=FALSE}
 #########################################
 # Características basadas en frecuencia #
 #########################################
@@ -401,16 +407,18 @@ car_frecuencia_train <- extraer_caracteristicas_fft(imagenes_train)
 car_frecuencia_test <- extraer_caracteristicas_fft(imagenes_test)
 
 # Mostrar las características extraídas
-print(car_frecuencia_train)
-print(car_frecuencia_test)
+head(car_frecuencia_train)
+head(car_frecuencia_test)
+
 ```
+
 
 En imágenes, la frecuencia describe cómo cambian los valores de los píxeles (intensidades o colores) a lo largo de la imagen.De hecho, frecuencias bajas representan cambios lentos y suaves, como áreas de color uniforme o gradientes suaves, como el brillo general o la uniformidad (útil para detectar nublado y noche).De la misma manera, frecuencias altas representan cambios rápidos, como bordes, texturas, detalles finos o ruido (útil para imagenes de día y soleado).
 Aplicando la Transformada de Fourier a la imagen, analizamos cómo cambian las intensidades en términos de frecuencias y lo que obtenemos es una matriz con las frecuencias bajas en el centro y las frecuencias altas hacia las esquinas.Para poder separar las frecuencias, usamos una máscara circular de valor 1 en el área definida por el radio y 0 fuera de ella, para frecuencias bajas y el complemento de dicha máscara para frecuencias altas bajas. Ahora que tenemos la división hecha, lo único que falta es el cálculo de la energía, que lo obtenemos simplemente sumando el valor absoluto (magnitud) de las componentes de frecuencia dentro de cada región (baja y alta). Esto nos da una medida de cuánta información está contenida en cada rango de frecuencias.
 
 
 
-## Enetrenamiento de modelos
+## Entrenamiento de modelos
 
 ```{r}
 #########################################
