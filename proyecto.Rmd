@@ -301,13 +301,13 @@ calcular_estadisticas <- function(imagenes_train) {
 # Usar la función con el vector de imágenes
 car_estadisticas_train <- calcular_estadisticas(imagenes_train)
 car_estadisticas_test <- calcular_estadisticas(imagenes_test)
-```
-```{r}
+
 head(car_estadisticas_train[,1:6])
+head(car_estadisticas_train[,7:13])
 
 ```
 ```{r}
-head(car_estadisticas_train[,7:13])
+
 ```
 
 Hue, Saturation, Value, HSV, (Tono Saturación Valor) es un modelo de color alternativo al RGB. El Tono (H) son los tres colores primarios y los tres secundarios de la rueda cromática. La Saturación (S) es la pureza e intensidad del color; cuanto más baja sea, más se acercará el color al gris. El Valor (V) se refiere a la claridad u oscuridad relativa de un color. Cada uno de estos valores tiene un límite; H va de 0-360, S y V van de 0-100.
