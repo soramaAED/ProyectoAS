@@ -236,13 +236,12 @@ plot(img_reescalada, main = paste("Imagen Reescalada (", new_width, "x", new_hei
 ```
 
 ```{r}
-original_reescalada(files_train[1])
+original_reescalada(files_test[12])
 ```
 
 ```{r}
 original_reescalada(files_train[130])
 ```
-
 
 ```{r}
 ###########
@@ -282,6 +281,94 @@ for (j in 1:length(imagenes_test)) {
 colnames(RGB_test) <- c("R","G","B")
 
 ```
+
+```{r}
+
+RGB_train_df <- as.data.frame(RGB_train)
+RGB_train_df$Clase <- meta_train$etiqueta
+
+RGB_test_df <- as.data.frame(RGB_test)
+RGB_test_df$Clase <- meta_test$etiqueta  
+
+RGB_train_mean <- aggregate(cbind(R, G, B) ~ Clase, data = RGB_train_df, FUN = mean)
+RGB_test_mean <- aggregate(cbind(R, G, B) ~ Clase, data = RGB_test_df, FUN = mean)
+
+RGB_train_mean
+```
+
+
+```{r}
+
+imagen <- imagenes_train[[which(pchSymb_train == 0)[25]]]
+
+
+par(mfrow=c(1,4), mar=c(3,3,3,1)) 
+
+plot(imagen, main="Imagen Original", axes = FALSE)
+image(imagen[, ncol(imagen):1, 1], main="Rojo", col=grey.colors(256), axes = FALSE, asp=1)
+
+image(imagen[, ncol(imagen):1, 2], main="Verde", col=grey.colors(256), axes=FALSE, asp=1)
+
+image(imagen[, ncol(imagen):1, 3], main="Azul", col=grey.colors(256), axes = FALSE, asp=1)
+
+```
+
+
+
+```{r}
+# Cargar el paquete necesario
+library(magick)
+
+# Cargar la imagen
+imagen <- imagenes_train[[1]]
+
+# Dimensiones deseadas para el reescalado
+new_width <- 640
+new_height <- 640
+
+# Convertir los tres canales RGB de la imagen
+r <- imagen[,,1]  # Canal Rojo
+g <- imagen[,,2]  # Canal Verde
+b <- imagen[,,3]  # Canal Azul
+
+# Convertir cada canal en imágenes individuales (usando magick)
+r_img <- image_blank(width = ncol(r), height = nrow(r), color = "white") %>%
+  image_fill(r, gravity = "center")
+
+g_img <- image_blank(width = ncol(g), height = nrow(g), color = "white") %>%
+  image_fill(g, gravity = "center")
+
+b_img <- image_blank(width = ncol(b), height = nrow(b), color = "white") %>%
+  image_fill(b, gravity = "center")
+
+# Reescalar cada canal individualmente
+r_resized <- image_resize(r_img, paste0(new_width, "x", new_height))
+g_resized <- image_resize(g_img, paste0(new_width, "x", new_height))
+b_resized <- image_resize(b_img, paste0(new_width, "x", new_height))
+
+# Combinar los canales reescalados en una imagen RGB final
+imagen_resized <- image_composite(r_resized, g_resized, operator = "over")
+imagen_resized <- image_composite(imagen_resized, b_resized, operator = "over")
+
+# Graficar la imagen original y los tres canales reescalados
+par(mfrow=c(1,4), mar=c(3,3,3,1))  # Configuración para mostrar 4 gráficos en una fila
+
+# Imagen original
+plot(imagen, main="Imagen Original")
+
+# Canal rojo reescalado
+plot(as.raster(r_resized), main="Canal Rojo", axes = FALSE)
+
+# Canal verde reescalado
+plot(as.raster(g_resized), main="Canal Verde", axes = FALSE)
+
+# Canal azul reescalado
+plot(as.raster(b_resized), main="Canal Azul", axes = FALSE)
+
+# Restaurar la configuración de gráficos a 
+
+```
+
 
 Además de la mediana, podemos extraer características estadísticas avanzadas de las imágenes, como Skewness, Kurtosis y contraste promedio, para capturar patrones únicos en la distribución de los valores de color o brillo. Estas métricas son útiles porque nos dan información sobre la variabilidad, la forma y la dispersión de los datos, complementando otras características como las medianas de los canales RGB o HSV.
 
@@ -357,9 +444,7 @@ head(car_estadisticas_train[,1:6])
 head(car_estadisticas_train[,7:13])
 
 ```
-```{r}
 
-```
 
 Hue, Saturation, Value, HSV, (Tono Saturación Valor) es un modelo de color alternativo al RGB. El Tono (H) son los tres colores primarios y los tres secundarios de la rueda cromática. La Saturación (S) es la pureza e intensidad del color; cuanto más baja sea, más se acercará el color al gris. El Valor (V) se refiere a la claridad u oscuridad relativa de un color. Cada uno de estos valores tiene un límite; H va de 0-360, S y V van de 0-100.
 
