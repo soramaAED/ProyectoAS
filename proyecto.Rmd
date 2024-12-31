@@ -151,6 +151,41 @@ if (file.exists("./particiones_datos.RData")) {
 }
 ```
 
+```{r}
+prop_train <- table(meta_train$etiqueta) / nrow(meta_train)
+prop_test <- table(meta_test$etiqueta) / nrow(meta_test)
+
+prop_train_df <- as.data.frame(prop_train)
+prop_test_df <- as.data.frame(prop_test)
+
+colnames(prop_train_df) <- c("Clase", "Proporcion")
+colnames(prop_test_df) <- c("Clase", "Proporcion")
+
+plot_train <- ggplot(prop_train_df, aes(x = "", y = Proporcion, fill = Clase)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  geom_text(aes(label = sprintf("%.2f%%", Proporcion * 100)), 
+            position = position_stack(vjust = 0.5), size = 4) + 
+  labs(title = "Distribución de Clases - Entrenamiento") +
+  theme_void() +
+  scale_fill_manual(values = c("soleado" = "cyan", "nublado" = "grey", "noche" = "dark blue"))
+
+print(plot_train)
+
+plot_test <- ggplot(prop_test_df, aes(x = "", y = Proporcion, fill = Clase)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  geom_text(aes(label = sprintf("%.2f%%", Proporcion * 100)), 
+            position = position_stack(vjust = 0.5), size = 4) + 
+  labs(title = "Distribución de Clases - Prueba") +
+  theme_void()  +
+  scale_fill_manual(values = c("soleado" = "cyan", "nublado" = "grey", "noche" = "dark blue"))
+
+print(plot_test)
+
+```
+
+
 # Preparación de los datos
 ```{r}
 # Dimensiones deseadas para el reescalado
