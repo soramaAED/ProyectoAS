@@ -188,10 +188,26 @@ imagenes_test <- reescalar_particion(files_test, new_width, new_height)
 length(imagenes_train)  # Número de imágenes reescaladas en train
 length(imagenes_test)   # Número de imágenes reescaladas en test
 
-# Mostrar la primera imagen reescalada
-plot(imagenes_train[[130]])
-
 ```
+
+```{r}
+original_reescalada<-function(img){
+img_original <- load.image(img)
+img_reescalada <- reescalar_imagen(img, 640, 640)
+
+ par(mfrow = c(1, 2))
+plot(img_original, main = paste("Imagen Original (", dim(img_original)[2], "x", dim(img_original)[1], ")", sep = ""))
+plot(img_reescalada, main = paste("Imagen Reescalada (", new_width, "x", new_height, ")", sep = ""))}
+```
+
+```{r}
+original_reescalada(files_train[1])
+```
+
+```{r}
+original_reescalada(files_train[130])
+```
+
 
 ```{r}
 ###########
