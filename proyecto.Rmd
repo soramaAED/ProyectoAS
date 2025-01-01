@@ -185,7 +185,6 @@ print(plot_test)
 
 ```
 
-
 # Preparación de los datos
 ```{r}
 # Dimensiones deseadas para el reescalado
@@ -236,12 +235,17 @@ plot(img_reescalada, main = paste("Imagen Reescalada (", new_width, "x", new_hei
 ```
 
 ```{r}
-original_reescalada(files_test[12])
+original_reescalada(files_train[140])
 ```
 
 ```{r}
-original_reescalada(files_train[130])
+original_reescalada(files_train[80])
 ```
+```{r}
+original_reescalada(files_train[40])
+```
+
+
 
 ```{r}
 ###########
@@ -298,8 +302,7 @@ RGB_train_mean
 
 
 ```{r}
-
-imagen <- imagenes_train[[which(pchSymb_train == 0)[25]]]
+imagen <- imagenes_train[[which(meta_train$etiqueta == "soleado")[4]]]
 
 
 par(mfrow=c(1,4), mar=c(3,3,3,1)) 
@@ -314,60 +317,6 @@ image(imagen[, ncol(imagen):1, 3], main="Azul", col=grey.colors(256), axes = FAL
 ```
 
 
-
-```{r}
-# Cargar el paquete necesario
-library(magick)
-
-# Cargar la imagen
-imagen <- imagenes_train[[1]]
-
-# Dimensiones deseadas para el reescalado
-new_width <- 640
-new_height <- 640
-
-# Convertir los tres canales RGB de la imagen
-r <- imagen[,,1]  # Canal Rojo
-g <- imagen[,,2]  # Canal Verde
-b <- imagen[,,3]  # Canal Azul
-
-# Convertir cada canal en imágenes individuales (usando magick)
-r_img <- image_blank(width = ncol(r), height = nrow(r), color = "white") %>%
-  image_fill(r, gravity = "center")
-
-g_img <- image_blank(width = ncol(g), height = nrow(g), color = "white") %>%
-  image_fill(g, gravity = "center")
-
-b_img <- image_blank(width = ncol(b), height = nrow(b), color = "white") %>%
-  image_fill(b, gravity = "center")
-
-# Reescalar cada canal individualmente
-r_resized <- image_resize(r_img, paste0(new_width, "x", new_height))
-g_resized <- image_resize(g_img, paste0(new_width, "x", new_height))
-b_resized <- image_resize(b_img, paste0(new_width, "x", new_height))
-
-# Combinar los canales reescalados en una imagen RGB final
-imagen_resized <- image_composite(r_resized, g_resized, operator = "over")
-imagen_resized <- image_composite(imagen_resized, b_resized, operator = "over")
-
-# Graficar la imagen original y los tres canales reescalados
-par(mfrow=c(1,4), mar=c(3,3,3,1))  # Configuración para mostrar 4 gráficos en una fila
-
-# Imagen original
-plot(imagen, main="Imagen Original")
-
-# Canal rojo reescalado
-plot(as.raster(r_resized), main="Canal Rojo", axes = FALSE)
-
-# Canal verde reescalado
-plot(as.raster(g_resized), main="Canal Verde", axes = FALSE)
-
-# Canal azul reescalado
-plot(as.raster(b_resized), main="Canal Azul", axes = FALSE)
-
-# Restaurar la configuración de gráficos a 
-
-```
 
 
 Además de la mediana, podemos extraer características estadísticas avanzadas de las imágenes, como Skewness, Kurtosis y contraste promedio, para capturar patrones únicos en la distribución de los valores de color o brillo. Estas métricas son útiles porque nos dan información sobre la variabilidad, la forma y la dispersión de los datos, complementando otras características como las medianas de los canales RGB o HSV.

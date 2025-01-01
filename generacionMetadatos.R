@@ -2,7 +2,7 @@
 base_dir <- "./data/"
 
 # Etiquetas (nombres de las carpetas)
-etiquetas <- c("soleado", "nublado", "noche")
+etiquetas <- c("noche","nublado","soleado")
 
 # Crear un data.frame vacío para almacenar los resultados
 dataset <- data.frame(nombre_imagen = character(),
