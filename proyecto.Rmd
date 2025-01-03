@@ -1,6 +1,8 @@
 ---
 title: "Proyecto"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 date: "2024-12-23"
 ---
 
@@ -24,7 +26,7 @@ library(mlbench)  # Para selección de características
 library(Rtsne)    # Para visualización t-SNE
 library(ggplot2)
 library(plotly)
-
+library(tidyr)
 # Establecer la semilla para reproducibilidad
 set.seed(42)
 ```
@@ -225,7 +227,7 @@ length(imagenes_test)   # Número de imágenes reescaladas en test
 ```
 
 ```{r}
-original_reescalada<-function(img){
+original_y_reescalada<-function(img){
 img_original <- load.image(img)
 img_reescalada <- reescalar_imagen(img, 640, 640)
 
@@ -235,14 +237,14 @@ plot(img_reescalada, main = paste("Imagen Reescalada (", new_width, "x", new_hei
 ```
 
 ```{r}
-original_reescalada(files_train[140])
+original_y_reescalada(files_train[140])
 ```
 
 ```{r}
-original_reescalada(files_train[80])
+original_y_reescalada(files_train[80])
 ```
 ```{r}
-original_reescalada(files_train[40])
+original_y_reescalada(files_train[40])
 ```
 
 
@@ -297,26 +299,73 @@ RGB_test_df$Clase <- meta_test$etiqueta
 RGB_train_mean <- aggregate(cbind(R, G, B) ~ Clase, data = RGB_train_df, FUN = mean)
 RGB_test_mean <- aggregate(cbind(R, G, B) ~ Clase, data = RGB_test_df, FUN = mean)
 
-RGB_train_mean
+
 ```
+
+
+
 
 
 ```{r}
 imagen <- imagenes_train[[which(meta_train$etiqueta == "soleado")[4]]]
-
-
-par(mfrow=c(1,4), mar=c(3,3,3,1)) 
-
+par(mfrow=c(1,4), mar=c(3,3,3,1))
 plot(imagen, main="Imagen Original", axes = FALSE)
 image(imagen[, ncol(imagen):1, 1], main="Rojo", col=grey.colors(256), axes = FALSE, asp=1)
-
 image(imagen[, ncol(imagen):1, 2], main="Verde", col=grey.colors(256), axes=FALSE, asp=1)
-
 image(imagen[, ncol(imagen):1, 3], main="Azul", col=grey.colors(256), axes = FALSE, asp=1)
 
 ```
 
+```{r}
 
+imagen <- imagenes_train[[which(meta_train$etiqueta == "soleado")[4]]]
+par(mfrow=c(1,4), mar=c(3,3,3,1))
+imagenR<-imagen
+imagenG<-imagen
+imagenB<-imagen
+imagenR[, ncol(imagenR):1, 2:3]<-0
+imagenG[, ncol(imagenG):1, c(1,3)]<-0
+imagenB[, ncol(imagenB):1, 1:2]<-0
+plot(imagen, main="Imagen Original", axes = FALSE)
+plot(imagenR, main="Rojo", axes = FALSE)
+plot(imagenG, main="Verde",  axes=FALSE)
+plot(imagenB, main="Azul", axes = FALSE)
+
+```
+
+
+```{r}
+RGB_train_mean[RGB_train_mean$Clase=="soleado",c("R","G","B")]
+```
+
+```{r}
+RGB_train_mean[RGB_train_mean$Clase=="nublado",c("R","G","B")]
+```
+
+
+```{r}
+RGB_train_mean[RGB_train_mean$Clase=="noche",c("R","G","B")]
+```
+```{r}
+
+boxplot_car<-function(DF,cols){
+DF_long <-DF %>%
+  pivot_longer(cols = cols, names_to = "Car", values_to = "Value")
+
+ggplot(DF_long, aes(x = Car, y = Value, fill = Car)) +
+  geom_boxplot() +
+  labs(title = paste0("Boxplots de ", paste(cols[-length(cols)], collapse = ", "), 
+                    ifelse(length(cols) > 1, paste0(" y ", cols[length(cols)]), cols)),
+       x = "Caracteristica",
+       y = "Valor",
+       fill = "Color") +
+  theme_minimal()+
+  facet_wrap(~ Clase) }
+```
+
+```{r}
+boxplot_car(RGB_train_df,c("R","G","B"))
+```
 
 
 Además de la mediana, podemos extraer características estadísticas avanzadas de las imágenes, como Skewness, Kurtosis y contraste promedio, para capturar patrones únicos en la distribución de los valores de color o brillo. Estas métricas son útiles porque nos dan información sobre la variabilidad, la forma y la dispersión de los datos, complementando otras características como las medianas de los canales RGB o HSV.
@@ -393,7 +442,21 @@ head(car_estadisticas_train[,1:6])
 head(car_estadisticas_train[,7:13])
 
 ```
+```{r}
+Car_train_df <- as.data.frame(car_estadisticas_train)
+Car_train_df$Clase <- meta_train$etiqueta
 
+Car_test_df <- as.data.frame(car_estadisticas_test)
+Car_test_df$Clase <- meta_test$etiqueta
+```
+
+```{r}
+boxplot_car(Car_train_df,c("skew_R","skew_G","skew_B"))
+boxplot_car(Car_train_df,c("kurtosis_R", "kurtosis_G", "kurtosis_B"))
+boxplot_car(Car_train_df,c("brillo_medio","contraste"))
+boxplot_car(Car_train_df,c("porc_claros", "porc_oscuros"))
+boxplot_car(Car_train_df,c("gris", "oscuro", "claro"))
+```
 
 Hue, Saturation, Value, HSV, (Tono Saturación Valor) es un modelo de color alternativo al RGB. El Tono (H) son los tres colores primarios y los tres secundarios de la rueda cromática. La Saturación (S) es la pureza e intensidad del color; cuanto más baja sea, más se acercará el color al gris. El Valor (V) se refiere a la claridad u oscuridad relativa de un color. Cada uno de estos valores tiene un límite; H va de 0-360, S y V van de 0-100.
 
@@ -422,7 +485,20 @@ colnames(HSV_test) <- c("H","S","V")
 
 ```
 
+```{r}
+HSV_train_df <- as.data.frame(HSV_train)
+HSV_train_df$Clase <- meta_train$etiqueta
 
+HSV_test_df <- as.data.frame(HSV_test)
+HSV_test_df$Clase <- meta_test$etiqueta  
+
+HSV_train_mean <- aggregate(cbind(H, S, V) ~ Clase, data = HSV_train_df, FUN = mean)
+HSV_test_mean <- aggregate(cbind(H, S, V) ~ Clase, data = HSV_test_df, FUN = mean)
+```
+
+```{r}
+boxplot_car(HSV_train_df,c("H","S","V"))
+```
 
 IDEA: Las imágenes de día o soleadas pueden tener más variación de alta frecuencia debido a sombras y detalles, mientras que las de noche o nublado pueden tener más componentes de baja frecuencia.
 
@@ -497,11 +573,62 @@ head(car_frecuencia_test)
 
 ```
 
+```{r}
+Freq_train_df <- as.data.frame(car_frecuencia_train)
+Freq_train_df$Clase <- meta_train$etiqueta
+
+Freq_test_df <- as.data.frame(car_frecuencia_test)
+Freq_test_df$Clase <- meta_test$etiqueta  
+```
+
+```{r}
+boxplot_car(Freq_train_df,c("Baja_Frecuencia", "Alta_Frecuencia"))
+# boxplot_car(Freq_train_df,c("Baja_Frecuencia"))
+# boxplot_car(Freq_train_df,c("Alta_Frecuencia"))
+```
 
 En imágenes, la frecuencia describe cómo cambian los valores de los píxeles (intensidades o colores) a lo largo de la imagen.De hecho, frecuencias bajas representan cambios lentos y suaves, como áreas de color uniforme o gradientes suaves, como el brillo general o la uniformidad (útil para detectar nublado y noche).De la misma manera, frecuencias altas representan cambios rápidos, como bordes, texturas, detalles finos o ruido (útil para imagenes de día y soleado).
 Aplicando la Transformada de Fourier a la imagen, analizamos cómo cambian las intensidades en términos de frecuencias y lo que obtenemos es una matriz con las frecuencias bajas en el centro y las frecuencias altas hacia las esquinas.Para poder separar las frecuencias, usamos una máscara circular de valor 1 en el área definida por el radio y 0 fuera de ella, para frecuencias bajas y el complemento de dicha máscara para frecuencias altas bajas. Ahora que tenemos la división hecha, lo único que falta es el cálculo de la energía, que lo obtenemos simplemente sumando el valor absoluto (magnitud) de las componentes de frecuencia dentro de cada región (baja y alta). Esto nos da una medida de cuánta información está contenida en cada rango de frecuencias.
 
 
+```{r}
+require(fields)
+foto<-imagenes_train[[which(meta_train$etiqueta == "soleado")[15]]]
+colores<-gray(0:256/256)
+plot(foto, axes = FALSE)
+for(i in 1:3){
+foto.fft<-fft(foto[,,i])
+fshift_image<-gsignal::fftshift(foto.fft,MARGIN=c(1,2))
+spectrum<-20*log10(Mod(fshift_image))
+fields::image.plot(spectrum)
+}
+```
+```{r}
+require(fields)
+foto<-imagenes_train[[which(meta_train$etiqueta == "nublado")[15]]]
+colores<-gray(0:256/256)
+plot(foto, axes = FALSE)
+for(i in 1:3){
+foto.fft<-fft(foto[,,i])
+fshift_image<-gsignal::fftshift(foto.fft,MARGIN=c(1,2))
+spectrum<-20*log10(Mod(fshift_image))
+fields::image.plot(spectrum)
+}
+```
+
+
+```{r}
+require(fields)
+foto<-imagenes_train[[which(meta_train$etiqueta == "noche")[15]]]
+colores<-gray(0:256/256)
+plot(foto, axes = FALSE)
+for(i in 1:3){
+foto.fft<-fft(foto[,,i])
+fshift_image<-gsignal::fftshift(foto.fft,MARGIN=c(1,2))
+spectrum<-20*log10(Mod(fshift_image))
+fields::image.plot(spectrum)
+}
+```
 
 ## Entrenamiento de modelos
 
@@ -641,6 +768,41 @@ resultados <- data.frame(
 
 print("\nResumen de resultados:")
 print(resultados)
+
+```
+```{r}
+CM_SVR <- confusionMatrix(as.factor(predicciones_svr), as.factor(y_test))
+CM_XGB <- confusionMatrix(as.factor(predicciones_xgb), as.factor(y_test))
+CM_KNN<- confusionMatrix(as.factor(predicciones_knn), as.factor(y_test))
+CM_RF <- confusionMatrix(as.factor(predicciones_rf), as.factor(y_test))
+CM_NB <- confusionMatrix(as.factor(predicciones_nb), as.factor(y_test))
+CM_LOG <- confusionMatrix(as.factor(predicciones_logistico), as.factor(y_test))
+```
+
+```{r}
+cat("\nMatriz de correlación del modelo SVR:\n")
+CM_SVR$table
+
+```
+```{r}
+indices_error <- which(as.factor(predicciones_svr) != as.factor(y_test))
+
+errores <- data.frame(
+  Indice = indices_error,
+  Correcto = y_test[indices_error],
+  Predicho = predicciones_svr[indices_error]
+)
+print(errores)
+
+```
+
+```{r}
+for (i in 1:nrow(errores)) {
+  imagen <- imagenes_test[[errores$Indice[i]]]
+  plot(imagen, 
+       main = paste0("Imagen de ", errores$Correcto[i], ". \nPred: ", errores$Predicho[i],"."), 
+       axes = FALSE)
+}
 
 ```
 
