@@ -27,6 +27,8 @@ library(Rtsne)    # Para visualización t-SNE
 library(ggplot2)
 library(plotly)
 library(tidyr)
+require(fields)
+library(nnet)
 # Establecer la semilla para reproducibilidad
 set.seed(42)
 ```
@@ -350,7 +352,7 @@ RGB_train_mean[RGB_train_mean$Clase=="noche",c("R","G","B")]
 
 boxplot_car<-function(DF,cols){
 DF_long <-DF %>%
-  pivot_longer(cols = cols, names_to = "Car", values_to = "Value")
+  pivot_longer(cols = all_of(cols), names_to = "Car", values_to = "Value")
 
 ggplot(DF_long, aes(x = Car, y = Value, fill = Car)) +
   geom_boxplot() +
@@ -582,9 +584,9 @@ Freq_test_df$Clase <- meta_test$etiqueta
 ```
 
 ```{r}
-boxplot_car(Freq_train_df,c("Baja_Frecuencia", "Alta_Frecuencia"))
-# boxplot_car(Freq_train_df,c("Baja_Frecuencia"))
-# boxplot_car(Freq_train_df,c("Alta_Frecuencia"))
+#boxplot_car(Freq_train_df,c("Baja_Frecuencia", "Alta_Frecuencia"))
+boxplot_car(Freq_train_df,c("Baja_Frecuencia"))
+boxplot_car(Freq_train_df,c("Alta_Frecuencia"))
 ```
 
 En imágenes, la frecuencia describe cómo cambian los valores de los píxeles (intensidades o colores) a lo largo de la imagen.De hecho, frecuencias bajas representan cambios lentos y suaves, como áreas de color uniforme o gradientes suaves, como el brillo general o la uniformidad (útil para detectar nublado y noche).De la misma manera, frecuencias altas representan cambios rápidos, como bordes, texturas, detalles finos o ruido (útil para imagenes de día y soleado).
@@ -592,19 +594,17 @@ Aplicando la Transformada de Fourier a la imagen, analizamos cómo cambian las i
 
 
 ```{r}
-require(fields)
-foto<-imagenes_train[[which(meta_train$etiqueta == "soleado")[15]]]
+foto<-imagenes_train[[which(meta_train$etiqueta == "soleado")[35]]]
 colores<-gray(0:256/256)
 plot(foto, axes = FALSE)
 for(i in 1:3){
 foto.fft<-fft(foto[,,i])
 fshift_image<-gsignal::fftshift(foto.fft,MARGIN=c(1,2))
 spectrum<-20*log10(Mod(fshift_image))
-fields::image.plot(spectrum)
+fields::image.plot(spectrum, main = paste0("Espectro de Frecuencia de Soleado para el nivel ",i))
 }
 ```
 ```{r}
-require(fields)
 foto<-imagenes_train[[which(meta_train$etiqueta == "nublado")[15]]]
 colores<-gray(0:256/256)
 plot(foto, axes = FALSE)
@@ -612,13 +612,12 @@ for(i in 1:3){
 foto.fft<-fft(foto[,,i])
 fshift_image<-gsignal::fftshift(foto.fft,MARGIN=c(1,2))
 spectrum<-20*log10(Mod(fshift_image))
-fields::image.plot(spectrum)
+fields::image.plot(spectrum, main = paste0("Espectro de Frecuencia de Nublado para el nivel ",i))
 }
 ```
 
 
 ```{r}
-require(fields)
 foto<-imagenes_train[[which(meta_train$etiqueta == "noche")[15]]]
 colores<-gray(0:256/256)
 plot(foto, axes = FALSE)
@@ -626,7 +625,7 @@ for(i in 1:3){
 foto.fft<-fft(foto[,,i])
 fshift_image<-gsignal::fftshift(foto.fft,MARGIN=c(1,2))
 spectrum<-20*log10(Mod(fshift_image))
-fields::image.plot(spectrum)
+fields::image.plot(spectrum, main = paste0("Espectro de Frecuencia de Noche para el nivel ",i))
 }
 ```
 
@@ -659,45 +658,90 @@ meta_test$etiqueta <- as.factor(meta_test$etiqueta)
 y_train <- meta_train$etiqueta
 y_test <- meta_test$etiqueta
 
-# Visualización inicial con t-SNE en 3D
-tsne_result <- Rtsne(as.matrix(X_train), dims = 3, perplexity = 30, verbose = TRUE, max_iter = 500)
-tsne_data <- as.data.frame(tsne_result$Y)
-tsne_data$Etiqueta <- y_train
+```
 
-# Crear el gráfico 3D usando plotly
-fig <- plot_ly(tsne_data, x = ~V1, y = ~V2, z = ~V3, color = ~Etiqueta, colors = RColorBrewer::brewer.pal(9, "Set1"),
-               marker = list(size = 5, opacity = 0.7, line = list(width = 0.5, color = 'black'))) %>%
-  layout(title = "Visualización de t-SNE en 3D",
-         scene = list(xaxis = list(title = "Dimensión 1"),
-                      yaxis = list(title = "Dimensión 2"),
-                      zaxis = list(title = "Dimensión 3")))
+```{r}
 
-# Mostrar el gráfico
-fig
+#########################################
+# Visualización PCA #
+#########################################
 
-# Visualización con PCA en 3D
+# PCA en 3D
 pca_result <- prcomp(scale(as.matrix(X_train)), center = TRUE, scale. = TRUE)
+summary(pca_result)
 pca_data <- pca_result$x
-pca_df <- data.frame(PC1 = pca_data[, 1], PC2 = pca_data[, 2], PC3 = pca_data[,3])
-pca_df$Etiqueta <- y_train
 
-# Crear el gráfico 3D usando plotly
-fig2 <- plot_ly(pca_df, x = ~pca_df[,1], y = ~pca_df[,2], z = ~pca_df[,3], color = ~Etiqueta, colors = RColorBrewer::brewer.pal(9, "Set1"),
-               marker = list(size = 5, opacity = 0.7, line = list(width = 0.5, color = 'black'))) %>%
+pca_df_3d <- data.frame(PC1 = pca_data[, 1], PC2 = pca_data[, 2], PC3 = pca_data[, 3])
+pca_df_3d$Etiqueta <- y_train
+
+fig_pca_3d <- plot_ly(pca_df_3d, x = ~PC1, y = ~PC2, z = ~PC3, color = ~Etiqueta, colors = RColorBrewer::brewer.pal(9, "Set1"),
+                      marker = list(size = 5, opacity = 0.7, line = list(width = 0.5, color = 'black'))) %>%
   layout(title = "Visualización de PCA en 3D",
          scene = list(xaxis = list(title = "Dimensión 1"),
                       yaxis = list(title = "Dimensión 2"),
                       zaxis = list(title = "Dimensión 3")))
 
-fig2
+fig_pca_3d
+
+# PCA en 2D
+pca_df_2d <- data.frame(PC1 = pca_data[, 1], PC2 = pca_data[, 2])
+pca_df_2d$Etiqueta <- y_train
+
+fig_pca_2d <- ggplot(pca_df_2d, aes(x = PC1, y = PC2, color = Etiqueta)) +
+  geom_point(size = 3, alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "Visualización de PCA en 2D", x = "PC1", y = "PC2")
+
+print(fig_pca_2d)
+
+#########################################
+# Visualización MDS #
+#########################################
+
+# MDS en 3D
+mds_result_3d <- cmdscale(dist(X_train), k = 3)
+mds_df_3d <- as.data.frame(mds_result_3d)
+colnames(mds_df_3d) <- c("Dim1", "Dim2", "Dim3")
+mds_df_3d$Etiqueta <- y_train
+
+fig_mds_3d <- plot_ly(mds_df_3d, x = ~Dim1, y = ~Dim2, z = ~Dim3, color = ~Etiqueta, colors = RColorBrewer::brewer.pal(9, "Set1"),
+                      marker = list(size = 5, opacity = 0.7, line = list(width = 0.5, color = 'black'))) %>%
+  layout(title = "Visualización de MDS en 3D",
+         scene = list(xaxis = list(title = "Dimensión 1"),
+                      yaxis = list(title = "Dimensión 2"),
+                      zaxis = list(title = "Dimensión 3")))
+
+fig_mds_3d
+#########################################
+# Visualización t-SNE #
+#########################################
+
+tsne_result  <- Rtsne(as.matrix(X_train), dims = 3, perplexity = 30, verbose = TRUE, max_iter = 500)
+tsne_data <- as.data.frame(tsne_result $Y)
+tsne_data$Etiqueta <- y_train
+
+# Gráfico 3D
+fig_tsne<- plot_ly(tsne_data, x = ~V1, y = ~V2, z = ~V3, color = ~Etiqueta, colors = RColorBrewer::brewer.pal(9, "Set1"),
+                       marker = list(size = 5, opacity = 0.7, line = list(width = 0.5, color = 'black'))) %>%
+  layout(title = "Visualización de t-SNE en 3D",
+         scene = list(xaxis = list(title = "Dimensión 1"),
+                      yaxis = list(title = "Dimensión 2"),
+                      zaxis = list(title = "Dimensión 3")))
+
+fig_tsne
+
+```
 
 
+
+
+```{r}
 # Entrenar y evaluar modelos
 
 # Definir una función para calcular métricas de evaluación
 evaluar_modelo <- function(predicciones, reales) {
   confusion <- confusionMatrix(as.factor(predicciones), as.factor(reales))
-  print(confusion)
+  print(confusion$table)
   
   precision <- confusion$byClass["Pos Pred Value"]
   recall <- confusion$byClass["Sensitivity"]
@@ -751,7 +795,6 @@ cat("\nEvaluación del modelo Naive Bayes:\n")
 metricas_nb <- evaluar_modelo(predicciones_nb, y_test)
 
 # Modelo 6: Regresión logística multiclase
-library(nnet)
 
 modelo_logistico <- multinom(y_train ~ ., data = X_train)
 predicciones_logistico <- predict(modelo_logistico, X_test)
@@ -766,24 +809,18 @@ resultados <- data.frame(
   Kappa = c(metricas_svr$Kappa, metricas_xgb$Kappa, metricas_knn$Kappa, metricas_rf$Kappa, metricas_nb$Kappa, metricas_logistico$Kappa)
 )
 
-print("\nResumen de resultados:")
 print(resultados)
 
 ```
+
+
+
 ```{r}
 CM_SVR <- confusionMatrix(as.factor(predicciones_svr), as.factor(y_test))
-CM_XGB <- confusionMatrix(as.factor(predicciones_xgb), as.factor(y_test))
-CM_KNN<- confusionMatrix(as.factor(predicciones_knn), as.factor(y_test))
-CM_RF <- confusionMatrix(as.factor(predicciones_rf), as.factor(y_test))
-CM_NB <- confusionMatrix(as.factor(predicciones_nb), as.factor(y_test))
-CM_LOG <- confusionMatrix(as.factor(predicciones_logistico), as.factor(y_test))
-```
-
-```{r}
 cat("\nMatriz de correlación del modelo SVR:\n")
 CM_SVR$table
-
 ```
+
 ```{r}
 indices_error <- which(as.factor(predicciones_svr) != as.factor(y_test))
 
