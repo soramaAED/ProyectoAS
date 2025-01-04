@@ -337,17 +337,10 @@ plot(imagenB, main="Azul", axes = FALSE)
 
 
 ```{r}
-RGB_train_mean[RGB_train_mean$Clase=="soleado",c("R","G","B")]
-```
-
-```{r}
-RGB_train_mean[RGB_train_mean$Clase=="nublado",c("R","G","B")]
+RGB_train_mean
 ```
 
 
-```{r}
-RGB_train_mean[RGB_train_mean$Clase=="noche",c("R","G","B")]
-```
 ```{r}
 
 boxplot_car<-function(DF,cols){
@@ -487,6 +480,33 @@ colnames(HSV_test) <- c("H","S","V")
 
 ```
 
+
+
+```{r}
+
+# Seleccionar la imagen de entrenamiento etiquetada como "soleado"
+imagen <- imagenes_train[[which(meta_train$etiqueta == "soleado")[1]]]
+
+# Convertir la imagen de RGB a HSV
+imagenHSV <- rgb2hsv(as.numeric(imagen[, , 1]), as.numeric(imagen[, , 2]), as.numeric(imagen[, , 3]),maxColorValue = 1)
+
+# Separar los canales H, S y V
+imagenH <- t(apply(matrix(imagenHSV[1, ],nrow=640,ncol=640),1,rev)) # Canal H
+imagenS <- t(apply(matrix(imagenHSV[2, ],nrow=640,ncol=640),1,rev)) # Canal S
+imagenV <- t(apply(matrix(imagenHSV[3, ],nrow=640,ncol=640),1,rev)) # Canal V
+
+# Configurar la disposición de gráficos
+par(mfrow = c(1, 4), mar = c(3, 3, 3, 1))
+
+# Mostrar la imagen original
+plot(imagen, main="Imagen Original", axes = FALSE)
+image.default(imagenH,col=rainbow(256),axes = FALSE, asp=1,main="Hue")
+image.default(imagenS,col=gray(0:256/256),axes = FALSE, asp=1,main="Saturation")
+image.default(imagenV,col=rev(gray(0:256/256)),axes = FALSE, asp=1,main="Value")
+
+
+```
+
 ```{r}
 HSV_train_df <- as.data.frame(HSV_train)
 HSV_train_df$Clase <- meta_train$etiqueta
@@ -496,6 +516,8 @@ HSV_test_df$Clase <- meta_test$etiqueta
 
 HSV_train_mean <- aggregate(cbind(H, S, V) ~ Clase, data = HSV_train_df, FUN = mean)
 HSV_test_mean <- aggregate(cbind(H, S, V) ~ Clase, data = HSV_test_df, FUN = mean)
+
+HSV_train_mean
 ```
 
 ```{r}
