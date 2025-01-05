@@ -305,9 +305,6 @@ RGB_test_mean <- aggregate(cbind(R, G, B) ~ Clase, data = RGB_test_df, FUN = mea
 ```
 
 
-
-
-
 ```{r}
 imagen <- imagenes_train[[which(meta_train$etiqueta == "soleado")[4]]]
 par(mfrow=c(1,4), mar=c(3,3,3,1))
@@ -316,11 +313,7 @@ image(imagen[, ncol(imagen):1, 1], main="Rojo", col=grey.colors(256), axes = FAL
 image(imagen[, ncol(imagen):1, 2], main="Verde", col=grey.colors(256), axes=FALSE, asp=1)
 image(imagen[, ncol(imagen):1, 3], main="Azul", col=grey.colors(256), axes = FALSE, asp=1)
 
-```
 
-```{r}
-
-imagen <- imagenes_train[[which(meta_train$etiqueta == "soleado")[4]]]
 par(mfrow=c(1,4), mar=c(3,3,3,1))
 imagenR<-imagen
 imagenG<-imagen
@@ -335,6 +328,51 @@ plot(imagenB, main="Azul", axes = FALSE)
 
 ```
 
+```{r}
+imagen <- imagenes_train[[which(meta_train$etiqueta == "nublado")[4]]]
+par(mfrow=c(1,4), mar=c(3,3,3,1))
+plot(imagen, main="Imagen Original", axes = FALSE)
+image(imagen[, ncol(imagen):1, 1], main="Rojo", col=grey.colors(256), axes = FALSE, asp=1)
+image(imagen[, ncol(imagen):1, 2], main="Verde", col=grey.colors(256), axes=FALSE, asp=1)
+image(imagen[, ncol(imagen):1, 3], main="Azul", col=grey.colors(256), axes = FALSE, asp=1)
+
+
+par(mfrow=c(1,4), mar=c(3,3,3,1))
+imagenR<-imagen
+imagenG<-imagen
+imagenB<-imagen
+imagenR[, ncol(imagenR):1, 2:3]<-0
+imagenG[, ncol(imagenG):1, c(1,3)]<-0
+imagenB[, ncol(imagenB):1, 1:2]<-0
+plot(imagen, main="Imagen Original", axes = FALSE)
+plot(imagenR, main="Rojo", axes = FALSE)
+plot(imagenG, main="Verde",  axes=FALSE)
+plot(imagenB, main="Azul", axes = FALSE)
+
+```
+
+```{r}
+imagen <- imagenes_train[[which(meta_train$etiqueta == "noche")[4]]]
+par(mfrow=c(1,4), mar=c(3,3,3,1))
+plot(imagen, main="Imagen Original", axes = FALSE)
+image(imagen[, ncol(imagen):1, 1], main="Rojo", col=grey.colors(256), axes = FALSE, asp=1)
+image(imagen[, ncol(imagen):1, 2], main="Verde", col=grey.colors(256), axes=FALSE, asp=1)
+image(imagen[, ncol(imagen):1, 3], main="Azul", col=grey.colors(256), axes = FALSE, asp=1)
+
+
+par(mfrow=c(1,4), mar=c(3,3,3,1))
+imagenR<-imagen
+imagenG<-imagen
+imagenB<-imagen
+imagenR[, ncol(imagenR):1, 2:3]<-0
+imagenG[, ncol(imagenG):1, c(1,3)]<-0
+imagenB[, ncol(imagenB):1, 1:2]<-0
+plot(imagen, main="Imagen Original", axes = FALSE)
+plot(imagenR, main="Rojo", axes = FALSE)
+plot(imagenG, main="Verde",  axes=FALSE)
+plot(imagenB, main="Azul", axes = FALSE)
+
+```
 
 ```{r}
 RGB_train_mean
@@ -483,29 +521,55 @@ colnames(HSV_test) <- c("H","S","V")
 
 
 ```{r}
-
-# Seleccionar la imagen de entrenamiento etiquetada como "soleado"
 imagen <- imagenes_train[[which(meta_train$etiqueta == "soleado")[1]]]
 
-# Convertir la imagen de RGB a HSV
 imagenHSV <- rgb2hsv(as.numeric(imagen[, , 1]), as.numeric(imagen[, , 2]), as.numeric(imagen[, , 3]),maxColorValue = 1)
 
-# Separar los canales H, S y V
 imagenH <- t(apply(matrix(imagenHSV[1, ],nrow=640,ncol=640),1,rev)) # Canal H
 imagenS <- t(apply(matrix(imagenHSV[2, ],nrow=640,ncol=640),1,rev)) # Canal S
 imagenV <- t(apply(matrix(imagenHSV[3, ],nrow=640,ncol=640),1,rev)) # Canal V
 
-# Configurar la disposición de gráficos
 par(mfrow = c(1, 4), mar = c(3, 3, 3, 1))
-
-# Mostrar la imagen original
 plot(imagen, main="Imagen Original", axes = FALSE)
 image.default(imagenH,col=rainbow(256),axes = FALSE, asp=1,main="Hue")
 image.default(imagenS,col=gray(0:256/256),axes = FALSE, asp=1,main="Saturation")
 image.default(imagenV,col=rev(gray(0:256/256)),axes = FALSE, asp=1,main="Value")
 
+```
+```{r}
+imagen <- imagenes_train[[which(meta_train$etiqueta == "nublado")[1]]]
+
+imagenHSV <- rgb2hsv(as.numeric(imagen[, , 1]), as.numeric(imagen[, , 2]), as.numeric(imagen[, , 3]),maxColorValue = 1)
+
+imagenH <- t(apply(matrix(imagenHSV[1, ],nrow=640,ncol=640),1,rev)) # Canal H
+imagenS <- t(apply(matrix(imagenHSV[2, ],nrow=640,ncol=640),1,rev)) # Canal S
+imagenV <- t(apply(matrix(imagenHSV[3, ],nrow=640,ncol=640),1,rev)) # Canal V
+
+par(mfrow = c(1, 4), mar = c(3, 3, 3, 1))
+plot(imagen, main="Imagen Original", axes = FALSE)
+image.default(imagenH,col=rainbow(256),axes = FALSE, asp=1,main="Hue")
+image.default(imagenS,col=gray(0:256/256),axes = FALSE, asp=1,main="Saturation")
+image.default(imagenV,col=rev(gray(0:256/256)),axes = FALSE, asp=1,main="Value")
 
 ```
+
+```{r}
+imagen <- imagenes_train[[which(meta_train$etiqueta == "noche")[3]]]
+
+imagenHSV <- rgb2hsv(as.numeric(imagen[, , 1]), as.numeric(imagen[, , 2]), as.numeric(imagen[, , 3]),maxColorValue = 1)
+
+imagenH <- t(apply(matrix(imagenHSV[1, ],nrow=640,ncol=640),1,rev)) # Canal H
+imagenS <- t(apply(matrix(imagenHSV[2, ],nrow=640,ncol=640),1,rev)) # Canal S
+imagenV <- t(apply(matrix(imagenHSV[3, ],nrow=640,ncol=640),1,rev)) # Canal V
+
+par(mfrow = c(1, 4), mar = c(3, 3, 3, 1))
+plot(imagen, main="Imagen Original", axes = FALSE)
+image.default(imagenH,col=rainbow(256),axes = FALSE, asp=1,main="Hue")
+image.default(imagenS,col=gray(0:256/256),axes = FALSE, asp=1,main="Saturation")
+image.default(imagenV,col=rev(gray(0:256/256)),axes = FALSE, asp=1,main="Value")
+
+```
+
 
 ```{r}
 HSV_train_df <- as.data.frame(HSV_train)
@@ -677,8 +741,24 @@ X_test <- cbind(car_estadisticas_test, car_frecuencia_test, hsv_test, rgb_test)
 meta_train$etiqueta <- as.factor(meta_train$etiqueta)
 meta_test$etiqueta <- as.factor(meta_test$etiqueta)
 
+normalizar_minmax <- function(x) {
+  return((x - min(x)) / (max(x) - min(x)))
+}
+
+estandarizar <- function(x) {
+  return((x - mean(x)) / sd(x))
+}
+
+
+X_train_normalizado <- as.data.frame(lapply(X_train, normalizar_minmax))
+X_test_normalizado <- as.data.frame(lapply(X_test, normalizar_minmax))
+
 y_train <- meta_train$etiqueta
 y_test <- meta_test$etiqueta
+
+X_train_estandarizar <- as.data.frame(lapply(X_train, estandarizar))
+X_test_estandarizar <- as.data.frame(lapply(X_test, estandarizar))
+
 
 ```
 
@@ -689,7 +769,7 @@ y_test <- meta_test$etiqueta
 #########################################
 
 # PCA en 3D
-pca_result <- prcomp(scale(as.matrix(X_train)), center = TRUE, scale. = TRUE)
+pca_result <- prcomp(scale(as.matrix(X_train_estandarizar)), center = TRUE, scale. = TRUE)
 summary(pca_result)
 pca_data <- pca_result$x
 
@@ -721,7 +801,7 @@ print(fig_pca_2d)
 #########################################
 
 # MDS en 3D
-mds_result_3d <- cmdscale(dist(X_train), k = 3)
+mds_result_3d <- cmdscale(dist(X_train_estandarizar), k = 3)
 mds_df_3d <- as.data.frame(mds_result_3d)
 colnames(mds_df_3d) <- c("Dim1", "Dim2", "Dim3")
 mds_df_3d$Etiqueta <- y_train
@@ -738,7 +818,7 @@ fig_mds_3d
 # Visualización t-SNE #
 #########################################
 
-tsne_result  <- Rtsne(as.matrix(X_train), dims = 3, perplexity = 30, verbose = TRUE, max_iter = 500)
+tsne_result  <- Rtsne(as.matrix(X_train_estandarizar), dims = 3, perplexity = 30, verbose = TRUE, max_iter = 500)
 tsne_data <- as.data.frame(tsne_result $Y)
 tsne_data$Etiqueta <- y_train
 
@@ -778,15 +858,15 @@ evaluar_modelo <- function(predicciones, reales) {
 
 
 # Modelo 1: SVR (Support Vector Classifier)
-modelo_svr <- svm(X_train, y = y_train, type = "C-classification", kernel = "radial", cost = 10, gamma = 0.1)
-predicciones_svr <- predict(modelo_svr, X_test)
+modelo_svr <- svm(X_train_estandarizar, y = y_train, type = "C-classification", kernel = "radial", cost = 10, gamma = 0.1)
+predicciones_svr <- predict(modelo_svr, X_test_estandarizar)
 cat("\nEvaluación del modelo SVR:\n")
 metricas_svr <- evaluar_modelo(predicciones_svr, y_test)
 
 # Modelo 2: XGBoost
 # Convertir los datos a formato de matriz para XGBoost
-X_train_matrix <- as.matrix(X_train)
-X_test_matrix <- as.matrix(X_test)
+X_train_matrix <- as.matrix(X_train_estandarizar)
+X_test_matrix <- as.matrix(X_test_estandarizar)
 dtrain <- xgb.DMatrix(data = X_train_matrix, label = as.numeric(y_train) - 1)
 dtest <- xgb.DMatrix(data = X_test_matrix, label = as.numeric(y_test) - 1)
 
@@ -800,26 +880,26 @@ metricas_xgb <- evaluar_modelo(predicciones_xgb, y_test)
 # Modelo 3: KNN
 # Elegir el valor de k (puedes ajustar este valor para mejorar el rendimiento)
 k <- 6
-predicciones_knn <- knn(train = X_train, test = X_test, cl = y_train, k = k)
+predicciones_knn <- knn(train = X_train_estandarizar, test = X_test_estandarizar, cl = y_train, k = k)
 cat("\nEvaluación del modelo KNN:\n")
 metricas_knn <- evaluar_modelo(predicciones_knn, y_test)
 
 # Modelo 4: Random Forest
-modelo_rf <- randomForest(x = X_train, y = y_train, ntree = 100, mtry = 5, importance = TRUE)
-predicciones_rf <- predict(modelo_rf, X_test)
+modelo_rf <- randomForest(x = X_train_estandarizar, y = y_train, ntree = 100, mtry = 5, importance = TRUE)
+predicciones_rf <- predict(modelo_rf, X_test_estandarizar)
 cat("\nEvaluación del modelo Random Forest:\n")
 metricas_rf <- evaluar_modelo(predicciones_rf, y_test)
 
 # Modelo 5: Naive Bayes
-modelo_nb <- naiveBayes(X_train, y_train)
-predicciones_nb <- predict(modelo_nb, X_test)
+modelo_nb <- naiveBayes(X_train_estandarizar, y_train)
+predicciones_nb <- predict(modelo_nb, X_test_estandarizar)
 cat("\nEvaluación del modelo Naive Bayes:\n")
 metricas_nb <- evaluar_modelo(predicciones_nb, y_test)
 
 # Modelo 6: Regresión logística multiclase
 
-modelo_logistico <- multinom(y_train ~ ., data = X_train)
-predicciones_logistico <- predict(modelo_logistico, X_test)
+modelo_logistico <- multinom(y_train ~ ., data = X_train_estandarizar)
+predicciones_logistico <- predict(modelo_logistico, X_test_estandarizar)
 cat("\nEvaluación del modelo de Regresión Logística:\n")
 metricas_logistico <- evaluar_modelo(predicciones_logistico, y_test)
 
@@ -838,18 +918,17 @@ print(resultados)
 
 
 ```{r}
-CM_SVR <- confusionMatrix(as.factor(predicciones_svr), as.factor(y_test))
-cat("\nMatriz de correlación del modelo SVR:\n")
+CM_SVR <- confusionMatrix(as.factor(predicciones_rf), as.factor(y_test))
 CM_SVR$table
 ```
 
 ```{r}
-indices_error <- which(as.factor(predicciones_svr) != as.factor(y_test))
+indices_error <- which(as.factor(predicciones_rf) != as.factor(y_test))
 
 errores <- data.frame(
   Indice = indices_error,
   Correcto = y_test[indices_error],
-  Predicho = predicciones_svr[indices_error]
+  Predicho = predicciones_rf[indices_error]
 )
 print(errores)
 
@@ -864,4 +943,126 @@ for (i in 1:nrow(errores)) {
 }
 
 ```
+```{r}
+pca_pre_train <- prcomp(scale(as.matrix(X_train_estandarizar)), center = TRUE, scale. = TRUE)
+pca_train <- data.frame(pca_pre_train$x[,1:7])
+# pca_train_5d <- data.frame(PC1 = pca_train[, 1], PC2 = pca_train[, 2],PC3 = pca_train[, 3] ,PC4 = pca_train[, 4],PC5 = pca_train[, 5])
+
+
+pca_test<-data.frame(predict(pca_pre_train,newdata=X_test_estandarizar)[,1:7])
+
+# pca_pre_test <- prcomp(scale(as.matrix(X_test_estandarizar)), center = TRUE, scale. = TRUE)
+# pca_test <- pca_pre_test$x
+# pca_test_5d <- data.frame(PC1 = pca_test[, 1], PC2 = pca_test[, 2], PC3 = pca_test[, 3], PC4 = pca_test[, 4],PC5 = pca_test[, 5])
+```
+
+```{r}
+# Entrenar y evaluar modelos
+
+# Definir una función para calcular métricas de evaluación
+evaluar_modelo <- function(predicciones, reales) {
+  confusion <- confusionMatrix(as.factor(predicciones), as.factor(reales))
+  print(confusion$table)
+  
+  precision <- confusion$byClass["Pos Pred Value"]
+  recall <- confusion$byClass["Sensitivity"]
+
+  return(list(
+    Accuracy = confusion$overall["Accuracy"],
+    Kappa = confusion$overall["Kappa"],
+    Precision = precision,
+    Recall = recall
+    ))
+}
+
+
+
+# Modelo 1: SVR (Support Vector Classifier)
+modelo_svr <- svm(pca_train, y = y_train, type = "C-classification", kernel = "radial", cost = 10, gamma = 0.1)
+predicciones_svr <- predict(modelo_svr, pca_test)
+cat("\nEvaluación del modelo SVR:\n")
+metricas_svr <- evaluar_modelo(predicciones_svr, y_test)
+
+# Modelo 2: XGBoost
+# Convertir los datos a formato de matriz para XGBoost
+X_train_matrix <- as.matrix(pca_train)
+X_test_matrix <- as.matrix(pca_test)
+dtrain <- xgb.DMatrix(data = X_train_matrix, label = as.numeric(y_train) - 1)
+dtest <- xgb.DMatrix(data = X_test_matrix, label = as.numeric(y_test) - 1)
+
+param <- list(objective = "multi:softmax", num_class = length(levels(y_train)), eta = 0.3, max_depth = 3)
+modelo_xgb <- xgboost(params = param, data = dtrain, nrounds = 50, verbose = 0)
+predicciones_xgb <- predict(modelo_xgb, dtest)
+predicciones_xgb <- factor(predicciones_xgb, levels = 0:(length(levels(y_train)) - 1), labels = levels(y_train))
+cat("\nEvaluación del modelo XGBoost:\n")
+metricas_xgb <- evaluar_modelo(predicciones_xgb, y_test)
+
+# Modelo 3: KNN
+# Elegir el valor de k (puedes ajustar este valor para mejorar el rendimiento)
+k <- 6
+predicciones_knn <- knn(train = pca_train, test = pca_test, cl = y_train, k = k)
+cat("\nEvaluación del modelo KNN:\n")
+metricas_knn <- evaluar_modelo(predicciones_knn, y_test)
+
+# Modelo 4: Random Forest
+modelo_rf <- randomForest(x = pca_train, y = y_train, ntree = 100, mtry = 5, importance = TRUE)
+predicciones_rf <- predict(modelo_rf, pca_test)
+cat("\nEvaluación del modelo Random Forest:\n")
+metricas_rf <- evaluar_modelo(predicciones_rf, y_test)
+
+# Modelo 5: Naive Bayes
+modelo_nb <- naiveBayes(pca_train, y_train)
+predicciones_nb <- predict(modelo_nb, pca_test)
+cat("\nEvaluación del modelo Naive Bayes:\n")
+metricas_nb <- evaluar_modelo(predicciones_nb, y_test)
+
+# Modelo 6: Regresión logística multiclase
+
+modelo_logistico <- multinom(y_train ~ ., data = pca_train)
+predicciones_logistico <- predict(modelo_logistico, pca_test)
+cat("\nEvaluación del modelo de Regresión Logística:\n")
+metricas_logistico <- evaluar_modelo(predicciones_logistico, y_test)
+
+
+# Resumen de resultados
+resultados <- data.frame(
+  Modelo = c("SVR", "XGBoost", "KNN", "Random Forest", "Naive Bayes", "Regresión logística"),
+  Accuracy = c(metricas_svr$Accuracy, metricas_xgb$Accuracy, metricas_knn$Accuracy, metricas_rf$Accuracy, metricas_nb$Accuracy, metricas_logistico$Accuracy),
+  Kappa = c(metricas_svr$Kappa, metricas_xgb$Kappa, metricas_knn$Kappa, metricas_rf$Kappa, metricas_nb$Kappa, metricas_logistico$Kappa)
+)
+
+print(resultados)
+
+```
+
+
+```{r}
+CM <- confusionMatrix(as.factor(predicciones_knn), as.factor(y_test))
+CM$table
+```
+
+```{r}
+indices_error <- which(as.factor(predicciones_knn) != as.factor(y_test))
+
+errores <- data.frame(
+  Indice = indices_error,
+  Correcto = y_test[indices_error],
+  Predicho = predicciones_knn[indices_error]
+)
+print(errores)
+
+```
+
+```{r}
+for (i in 1:nrow(errores)) {
+  imagen <- imagenes_test[[errores$Indice[i]]]
+  plot(imagen, 
+       main = paste0("Imagen de ", errores$Correcto[i], ". \nPred: ", errores$Predicho[i],"."), 
+       axes = FALSE)
+}
+
+```
+
+
+
 
