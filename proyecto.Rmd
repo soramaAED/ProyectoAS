@@ -818,9 +818,9 @@ fig_mds_3d
 # Visualización t-SNE #
 #########################################
 
-tsne_result  <- Rtsne(as.matrix(X_train_estandarizar), dims = 3, perplexity = 30, verbose = TRUE, max_iter = 500)
+tsne_result  <- Rtsne(as.matrix(X_train_estandarizar[!duplicated(X_train_estandarizar),]), dims = 3, perplexity = 30, verbose = TRUE, max_iter = 500)
 tsne_data <- as.data.frame(tsne_result $Y)
-tsne_data$Etiqueta <- y_train
+tsne_data$Etiqueta <- y_train[!duplicated(X_train_estandarizar)]
 
 # Gráfico 3D
 fig_tsne<- plot_ly(tsne_data, x = ~V1, y = ~V2, z = ~V3, color = ~Etiqueta, colors = RColorBrewer::brewer.pal(9, "Set1"),
