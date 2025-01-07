@@ -918,17 +918,17 @@ print(resultados)
 
 
 ```{r}
-CM_SVR <- confusionMatrix(as.factor(predicciones_rf), as.factor(y_test))
+CM_SVR <- confusionMatrix(as.factor(predicciones_svr), as.factor(y_test))
 CM_SVR$table
 ```
 
 ```{r}
-indices_error <- which(as.factor(predicciones_rf) != as.factor(y_test))
+indices_error <- which(as.factor(predicciones_svr) != as.factor(y_test))
 
 errores <- data.frame(
   Indice = indices_error,
   Correcto = y_test[indices_error],
-  Predicho = predicciones_rf[indices_error]
+  Predicho = predicciones_svr[indices_error]
 )
 print(errores)
 
