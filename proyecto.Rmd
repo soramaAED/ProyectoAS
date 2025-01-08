@@ -943,17 +943,16 @@ for (i in 1:nrow(errores)) {
 }
 
 ```
+
+
+# Modelos con PCA
+
+
 ```{r}
 pca_pre_train <- prcomp(scale(as.matrix(X_train_estandarizar)), center = TRUE, scale. = TRUE)
 pca_train <- data.frame(pca_pre_train$x[,1:7])
-# pca_train_5d <- data.frame(PC1 = pca_train[, 1], PC2 = pca_train[, 2],PC3 = pca_train[, 3] ,PC4 = pca_train[, 4],PC5 = pca_train[, 5])
-
 
 pca_test<-data.frame(predict(pca_pre_train,newdata=X_test_estandarizar)[,1:7])
-
-# pca_pre_test <- prcomp(scale(as.matrix(X_test_estandarizar)), center = TRUE, scale. = TRUE)
-# pca_test <- pca_pre_test$x
-# pca_test_5d <- data.frame(PC1 = pca_test[, 1], PC2 = pca_test[, 2], PC3 = pca_test[, 3], PC4 = pca_test[, 4],PC5 = pca_test[, 5])
 ```
 
 ```{r}
@@ -1034,6 +1033,54 @@ resultados <- data.frame(
 print(resultados)
 
 ```
+```{r, warning=FALSE}
+library(pROC)
+
+# SVR
+modelo_svr <- svm(pca_train, y = y_train, type = "C-classification", 
+                  kernel = "radial", cost = 10, gamma = 0.1, probability = TRUE)
+predicciones_svr_prob <- predict(modelo_svr, pca_test, probability = TRUE)
+probabilidades_svr <- attr(predicciones_svr_prob, "probabilities")
+probabilidades_svr<-as.data.frame(probabilidades_svr)
+
+# Random Forest
+prob_rf <- predict(modelo_rf, pca_test, type = "prob")
+prob_rf<-as.data.frame(prob_rf)
+# Naive Bayes
+prob_nb <- predict(modelo_nb, pca_test, type = "raw")
+prob_nb<-as.data.frame(prob_nb)
+# Regresión Logística
+prob_logistico <- predict(modelo_logistico, pca_test, type = "prob")
+prob_logistico<-as.data.frame(prob_logistico)
+
+calc_roc <- function(y_test, prob_pred, levels_y = levels(y_test), title = "") {
+  # Calcular la lista de curvas ROC
+  roc_list <- lapply(levels_y, function(class) {
+    # Convertir la variable objetivo en binaria: 1 para la clase actual, 0 para las demás
+    binary_actual <- as.numeric(y_test == class)
+    roc(response = binary_actual, predictor = prob_pred[[class]])
+  })
+  col<-c("blue","red","green"
+  )
+  plot(roc_list[[1]], col = col[[1]], main = paste0("Curvas ROC Multiclase - ", title), xlim = c(0, 1), ylim = c(0, 1))
+  
+  for (i in 2:length(roc_list)) {
+    plot(roc_list[[i]], col = col[[i]], add = TRUE)
+  }
+  legend("bottomright", legend = levels_y, 
+         col = rainbow(length(roc_list)), lty = 1)
+}
+
+calc_roc(y_test, probabilidades_svr, title = "SVR")
+calc_roc(y_test, prob_nb, title = "Naive Bayes")
+calc_roc(y_test, prob_rf, title = "Random Forest")
+calc_roc(y_test, prob_logistico, title = "Regresión Logistica")
+
+```
+
+
+
+
 
 
 ```{r}
