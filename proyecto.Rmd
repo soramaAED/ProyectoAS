@@ -228,6 +228,9 @@ length(imagenes_test)   # Número de imágenes reescaladas en test
 
 ```
 
+## Visualización de la reescalada
+
+Visualización de una imagen reescalada por clase.
 ```{r}
 original_y_reescalada<-function(img){
 img_original <- load.image(img)
@@ -249,7 +252,9 @@ original_y_reescalada(files_train[80])
 original_y_reescalada(files_train[40])
 ```
 
+# Características
 
+## Características RGB
 
 ```{r}
 ###########
@@ -290,6 +295,8 @@ colnames(RGB_test) <- c("R","G","B")
 
 ```
 
+
+### Media de las características RGB
 ```{r}
 
 RGB_train_df <- as.data.frame(RGB_train)
@@ -301,7 +308,7 @@ RGB_test_df$Clase <- meta_test$etiqueta
 RGB_train_mean <- aggregate(cbind(R, G, B) ~ Clase, data = RGB_train_df, FUN = mean)
 RGB_test_mean <- aggregate(cbind(R, G, B) ~ Clase, data = RGB_test_df, FUN = mean)
 
-
+RGB_train_mean
 ```
 
 
@@ -374,10 +381,7 @@ plot(imagenB, main="Azul", axes = FALSE)
 
 ```
 
-```{r}
-RGB_train_mean
-```
-
+### Boxplot características RGB
 
 ```{r}
 
@@ -401,6 +405,7 @@ ggplot(DF_long, aes(x = Car, y = Value, fill = Car)) +
 boxplot_car(RGB_train_df,c("R","G","B"))
 ```
 
+## Otras características: Asimetría, Kurtosis, contraste, brillo...
 
 Además de la mediana, podemos extraer características estadísticas avanzadas de las imágenes, como Skewness, Kurtosis y contraste promedio, para capturar patrones únicos en la distribución de los valores de color o brillo. Estas métricas son útiles porque nos dan información sobre la variabilidad, la forma y la dispersión de los datos, complementando otras características como las medianas de los canales RGB o HSV.
 
@@ -491,6 +496,8 @@ boxplot_car(Car_train_df,c("brillo_medio","contraste"))
 boxplot_car(Car_train_df,c("porc_claros", "porc_oscuros"), 0, 100)
 boxplot_car(Car_train_df,c("gris", "oscuro", "claro"), 0, 100)
 ```
+
+## Características HSV
 
 Hue, Saturation, Value, HSV, (Tono Saturación Valor) es un modelo de color alternativo al RGB. El Tono (H) son los tres colores primarios y los tres secundarios de la rueda cromática. La Saturación (S) es la pureza e intensidad del color; cuanto más baja sea, más se acercará el color al gris. El Valor (V) se refiere a la claridad u oscuridad relativa de un color. Cada uno de estos valores tiene un límite; H va de 0-360, S y V van de 0-100.
 
@@ -588,6 +595,8 @@ HSV_train_mean
 ```{r}
 boxplot_car(HSV_train_df,c("H","S","V"), -0.5, 1)
 ```
+
+## Características basadas en frecuencia
 
 IDEA: Las imágenes de día o soleadas pueden tener más variación de alta frecuencia debido a sombras y detalles, mientras que las de noche o nublado pueden tener más componentes de baja frecuencia.
 
@@ -716,7 +725,7 @@ fields::image.plot(spectrum, main = paste0("Espectro de Frecuencia de Noche para
 }
 ```
 
-## Entrenamiento de modelos
+# Entrenamiento de modelos
 
 ```{r}
 #########################################
@@ -922,6 +931,7 @@ print(resultados)
 CM_SVR <- confusionMatrix(as.factor(predicciones_svr), as.factor(y_test))
 CM_SVR$table
 ```
+## Visualización de imagenes mal etiquetadas
 
 ```{r}
 indices_error <- which(as.factor(predicciones_svr) != as.factor(y_test))
@@ -935,6 +945,8 @@ print(errores)
 
 ```
 
+
+
 ```{r}
 for (i in 1:nrow(errores)) {
   imagen <- imagenes_test[[errores$Indice[i]]]
@@ -946,7 +958,7 @@ for (i in 1:nrow(errores)) {
 ```
 
 
-# Modelos con PCA
+# Entrenamiento de modelos con PCA
 
 
 ```{r}
@@ -1034,6 +1046,8 @@ resultados <- data.frame(
 print(resultados)
 
 ```
+## Curvas ROC
+
 ```{r, warning=FALSE}
 library(pROC)
 
@@ -1079,15 +1093,12 @@ calc_roc(y_test, prob_logistico, title = "Regresión Logistica")
 
 ```
 
-
-
-
-
-
 ```{r}
 CM <- confusionMatrix(as.factor(predicciones_knn), as.factor(y_test))
 CM$table
 ```
+
+## Visualización de imagenes mal etiquetadas
 
 ```{r}
 indices_error <- which(as.factor(predicciones_knn) != as.factor(y_test))
