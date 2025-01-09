@@ -381,7 +381,7 @@ RGB_train_mean
 
 ```{r}
 
-boxplot_car<-function(DF,cols){
+boxplot_car<-function(DF,cols, ymin = 0, ymax = 1){
 DF_long <-DF %>%
   pivot_longer(cols = all_of(cols), names_to = "Car", values_to = "Value")
 
@@ -393,6 +393,7 @@ ggplot(DF_long, aes(x = Car, y = Value, fill = Car)) +
        y = "Valor",
        fill = "Color") +
   theme_minimal()+
+  ylim(c(ymin, ymax))+
   facet_wrap(~ Clase) }
 ```
 
@@ -484,11 +485,11 @@ Car_test_df$Clase <- meta_test$etiqueta
 ```
 
 ```{r}
-boxplot_car(Car_train_df,c("skew_R","skew_G","skew_B"))
-boxplot_car(Car_train_df,c("kurtosis_R", "kurtosis_G", "kurtosis_B"))
+boxplot_car(Car_train_df,c("skew_R","skew_G","skew_B"), 0, 10)
+boxplot_car(Car_train_df,c("kurtosis_R", "kurtosis_G", "kurtosis_B"), -1, 10)
 boxplot_car(Car_train_df,c("brillo_medio","contraste"))
-boxplot_car(Car_train_df,c("porc_claros", "porc_oscuros"))
-boxplot_car(Car_train_df,c("gris", "oscuro", "claro"))
+boxplot_car(Car_train_df,c("porc_claros", "porc_oscuros"), 0, 100)
+boxplot_car(Car_train_df,c("gris", "oscuro", "claro"), 0, 100)
 ```
 
 Hue, Saturation, Value, HSV, (Tono Saturación Valor) es un modelo de color alternativo al RGB. El Tono (H) son los tres colores primarios y los tres secundarios de la rueda cromática. La Saturación (S) es la pureza e intensidad del color; cuanto más baja sea, más se acercará el color al gris. El Valor (V) se refiere a la claridad u oscuridad relativa de un color. Cada uno de estos valores tiene un límite; H va de 0-360, S y V van de 0-100.
@@ -503,14 +504,14 @@ HSV_train <- matrix(0, nrow = nrow(RGB_train), ncol = 3)
 HSV_test <- matrix(0, nrow = nrow(RGB_test), ncol = 3)
 
 for (i in 1:nrow(RGB_train)) {
-  HSV_train[i, ] <- rgb2hsv( RGB_train[i, 1], RGB_train[i, 2], RGB_train[i, 3])
+  HSV_train[i, ] <- rgb2hsv( RGB_train[i, 1], RGB_train[i, 2], RGB_train[i, 3], maxColorValue = 1)
   HSV_train[i,1] <- atan2(mean(sin(HSV_train[i, 1] * 2 * pi)), mean(cos(HSV_train[i, 1] * 2 * pi))) / (2 * pi) # es el arctg del angulo del que le doy sin y cos, entre 0 y 1, estoy desaciendo la circularidad, dando más peso a la H
 }
 
 colnames(HSV_train) <- c("H","S","V")
 
 for (i in 1:nrow(RGB_test)) {
-  HSV_test[i, ] <- rgb2hsv(RGB_test[i, 1], RGB_test[i, 2], RGB_test[i, 3])
+  HSV_test[i, ] <- rgb2hsv(RGB_test[i, 1], RGB_test[i, 2], RGB_test[i, 3], maxColorValue = 1)
   HSV_test[i,1] <- atan2(mean(sin(HSV_test[i, 1] * 2 * pi)), mean(cos(HSV_test[i, 1] * 2 * pi))) / (2 * pi) 
 }
 
@@ -585,7 +586,7 @@ HSV_train_mean
 ```
 
 ```{r}
-boxplot_car(HSV_train_df,c("H","S","V"))
+boxplot_car(HSV_train_df,c("H","S","V"), -0.5, 1)
 ```
 
 IDEA: Las imágenes de día o soleadas pueden tener más variación de alta frecuencia debido a sombras y detalles, mientras que las de noche o nublado pueden tener más componentes de baja frecuencia.
@@ -671,8 +672,8 @@ Freq_test_df$Clase <- meta_test$etiqueta
 
 ```{r}
 #boxplot_car(Freq_train_df,c("Baja_Frecuencia", "Alta_Frecuencia"))
-boxplot_car(Freq_train_df,c("Baja_Frecuencia"))
-boxplot_car(Freq_train_df,c("Alta_Frecuencia"))
+boxplot_car(Freq_train_df,c("Baja_Frecuencia"), 0, 10000000)
+boxplot_car(Freq_train_df,c("Alta_Frecuencia"), 0, 100000000)
 ```
 
 En imágenes, la frecuencia describe cómo cambian los valores de los píxeles (intensidades o colores) a lo largo de la imagen.De hecho, frecuencias bajas representan cambios lentos y suaves, como áreas de color uniforme o gradientes suaves, como el brillo general o la uniformidad (útil para detectar nublado y noche).De la misma manera, frecuencias altas representan cambios rápidos, como bordes, texturas, detalles finos o ruido (útil para imagenes de día y soleado).
