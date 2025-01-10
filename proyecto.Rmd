@@ -1094,19 +1094,19 @@ calc_roc(y_test, prob_logistico, title = "Regresión Logistica")
 ```
 
 ```{r}
-CM <- confusionMatrix(as.factor(predicciones_knn), as.factor(y_test))
+CM <- confusionMatrix(as.factor(predicciones_logistico), as.factor(y_test))
 CM$table
 ```
 
 ## Visualización de imagenes mal etiquetadas
 
 ```{r}
-indices_error <- which(as.factor(predicciones_knn) != as.factor(y_test))
+indices_error <- which(as.factor(predicciones_logistico) != as.factor(y_test))
 
 errores <- data.frame(
   Indice = indices_error,
   Correcto = y_test[indices_error],
-  Predicho = predicciones_knn[indices_error]
+  Predicho = predicciones_logistico[indices_error]
 )
 print(errores)
 
